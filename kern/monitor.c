@@ -29,6 +29,7 @@ static struct Command commands[] = {
 	{ "backtrace", "Display backtrace", mon_backtrace },
 	{ "timer_start", "start timer", mon_start },
   { "timer_stop", "stop timer", mon_stop },
+	{ "pages", "Display free and allocated pages", mon_pages },
 	{ "test", "Display some text", mon_test},
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
@@ -62,6 +63,42 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
             (uint32_t)end, (uint32_t)end - KERNBASE);
 	cprintf("Kernel executable memory footprint: %dKB\n",
 		ROUNDUP(end - entry, 1024) / 1024);
+	return 0;
+}
+
+int
+mon_pages(int argc, char **argv, struct Trapframe *tf) {
+	size_t i, j;
+	for (i = 1, j = 0; i < npages; i++) {
+		if (pages[i - 1].pp_ref && !pages[i].pp_ref) {
+			if (i - j == 1) {
+				cprintf("%d ALLOCATED\n", j + 1);
+			} else {
+				cprintf("%d..%d ALLOCATED\n", j + 1, i);
+			}
+			j = i;
+		} else if (!pages[i - 1].pp_ref && pages[i].pp_ref) {
+			if (i - j == 1) {
+				cprintf("%d FREE\n", j + 1);
+			} else {
+				cprintf("%d..%d FREE\n", j + 1, i);
+			}
+			j = i;
+		}
+	}
+	if (j == npages - 1) {
+		if (pages[j].pp_ref) {
+			cprintf("%d ALLOCATED\n", j + 1);
+		} else {
+			cprintf("%d FREE\n", j + 1);
+		}
+	} else {
+		if (pages[j].pp_ref) {
+			cprintf("%d..%d ALLOCATED\n", j + 1, npages);
+		} else {
+			cprintf("%d..%d FREE\n", j + 1, npages);
+		}
+	}
 	return 0;
 }
 
