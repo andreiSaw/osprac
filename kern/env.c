@@ -6,6 +6,8 @@
 #include <inc/string.h>
 #include <inc/assert.h>
 #include <inc/elf.h>
+#include <kern/kdebug.h>
+
 
 #include <kern/env.h>
 #include <kern/trap.h>
@@ -121,7 +123,24 @@ env_init(void)
 {
 	// Set up envs array
 	//LAB 3: Your code here.
-	
+
+	int i;
+	struct Env *last = NULL;
+	for (i = 0; i < NENV; ++i) {
+		envs[i].env_status = ENV_FREE;
+		envs[i].env_runs = 0;
+		envs[i].env_id = 0;
+		envs[i].env_parent_id = 0;
+
+		if (last) {
+			last->env_link = &envs[i];
+		} else {
+			env_free_list = &envs[i];	
+		}
+
+		last = &envs[i];
+	}
+
 	// Per-CPU part of the initialization
 	env_init_percpu();
 }
@@ -201,6 +220,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_cs = GD_KT | 0;
 	//LAB 3: Your code here.
 	// e->env_tf.tf_esp = 0x210000;
+	e->env_tf.tf_esp = 0x210000 - ENVX(e->env_id) * 2 * PGSIZE;
 #else
 #endif
 	// You will set e->env_tf.tf_eip later.
@@ -219,6 +239,43 @@ bind_functions(struct Env *e, struct Elf *elf)
 {
 	//find_function from kdebug.c should be used
 	//LAB 3: Your code here.
+
+    // section headers table
+	struct Secthdr *sh = (struct Secthdr *)((uint8_t *)elf + elf->e_shoff); 
+	
+    // section name string table
+    char *sname_strtable = (char *)elf + (sh + elf->e_shstrndx)->sh_offset;
+	
+    uint32_t i;
+	for (i = 0; i < elf->e_shnum; i++) {		
+		if (sh[i].sh_type == ELF_SHT_STRTAB) {
+			char *tabname = sname_strtable + sh[i].sh_name;			
+			if (strncmp(tabname, ".strtab", 7) == 0) {
+				break;
+			}
+		}
+	}
+    
+	// string table of symbol table entries
+	char *st_strtable = (char *)elf + sh[i].sh_offset;
+	
+	for (i = 0; i < elf->e_shnum; i++) {		
+		if (sh[i].sh_type == ELF_SHT_SYMTAB) {
+			
+			struct Elf32_Sym *st = (struct Elf32_Sym *)((uint8_t *)elf + sh[i].sh_offset);
+			uint8_t entry_count = sh[i].sh_size / sh[i].sh_entsize;
+			
+			uint32_t j;
+			for (j = 0; j < entry_count; j++) {
+				const char *fname = st_strtable + st[j].st_name;
+				uintptr_t kern_addr = find_function(fname);
+				if (kern_addr > 0) {
+					*((uintptr_t *) st[j].st_value) = kern_addr;
+				}
+			}
+		}
+	}
+
 
 	/*
 	*((int *) 0x00231008) = (int) &cprintf;
@@ -275,10 +332,34 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	//LAB 3: Your code here.
+
+	struct Proghdr *ph, *eph;
+    struct Elf *ELFHDR = (struct Elf *)binary;
+    
+    // is this a valid ELF?
+	if (ELFHDR->e_magic != ELF_MAGIC)
+		panic("bad binary\n");
+
+	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
+	eph = ph + ELFHDR->e_phnum;
+	
+    for (; ph < eph; ph++) {
+		
+		if (ph->p_type == ELF_PROG_LOAD) {
+
+            memmove((void *)ph->p_va, (void *)(binary + ph->p_offset), ph->p_filesz);
+            memset((void *)ph->p_va + ph->p_filesz, 0, (ph->p_memsz - ph->p_filesz));
+        }
+    }
+
+    e->env_tf.tf_eip = ELFHDR->e_entry;
+
 	
 #ifdef CONFIG_KSPACE
 	// Uncomment this for task №5.
 	//bind_functions();
+	bind_functions(e, ELFHDR);
+
 #endif
 }
 
@@ -293,6 +374,14 @@ void
 env_create(uint8_t *binary, size_t size, enum EnvType type)
 {
 	//LAB 3: Your code here.
+	struct Env *e;
+    if (env_alloc(&e, 0) == 0) {
+        load_icode(e, binary, size);
+        e->env_type = type;
+    } else {
+        panic("alloc error\n");
+    }
+
 }
 
 //
@@ -319,11 +408,18 @@ void
 env_destroy(struct Env *e)
 {
 	//LAB 3: Your code here.
+
+	if (e->env_status == ENV_RUNNING && curenv != e) {
+		e->env_status = ENV_DYING;
+		return;
+	}
+
 	env_free(e);
 
-	cprintf("Destroyed the only environment - nothing more to do!\n");
-	while (1)
-		monitor(NULL);
+	if (curenv == e) {
+		curenv = NULL;
+		sched_yield();
+	}
 }
 
 #ifdef CONFIG_KSPACE
@@ -420,7 +516,14 @@ env_run(struct Env *e)
 	//
 	//LAB 3: Your code here.
 
-
+	if (curenv) {
+        if (curenv->env_status == ENV_RUNNING) {
+            curenv->env_status = ENV_RUNNABLE;
+        }
+    }
+    curenv = e;
+    curenv->env_status = ENV_RUNNING;
+    curenv->env_runs++;
 	env_pop_tf(&e->env_tf);
 }
 
