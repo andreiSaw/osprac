@@ -101,7 +101,6 @@ mon_pages(int argc, char **argv, struct Trapframe *tf) {
 			cprintf("%d..%d FREE\n", j + 1, npages);
 		}
 	}
-	}		
 	return 0;
 }
 
