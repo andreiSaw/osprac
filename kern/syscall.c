@@ -405,9 +405,26 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_getenvid();
 	} else if (syscallno == SYS_env_destroy) {
 		return sys_env_destroy(a1);
+	} else if (syscallno == SYS_exofork) {
+		return (int32_t) sys_exofork();
+	} else if (syscallno == SYS_env_set_status) {
+		return (int32_t) sys_env_set_status((envid_t) a1, a2);
+	} else if (syscallno == SYS_page_map) {
+		return (int32_t) sys_page_map((envid_t) a1, (void *) a2, (envid_t) a3, (void *) a4, a5);
+	} else if (syscallno == SYS_page_unmap) {
+		return (int32_t) sys_page_unmap((envid_t) a1, (void *) a2);
+	} else if (syscallno == SYS_env_set_pgfault_upcall) {
+		return (int32_t) sys_env_set_pgfault_upcall((envid_t) a1, (void *) a2);
+	} else if (syscallno == SYS_page_alloc) {
+		return (int32_t) sys_page_alloc((envid_t) a1, (void *) a2, a3);
+	} else if (syscallno == SYS_ipc_try_send) {
+		return (int32_t) sys_ipc_try_send((envid_t) a1, a2, (void *) a3, a4);
+	} else if (syscallno == SYS_ipc_recv) {
+		return (int32_t) sys_ipc_recv((void *) a1);
+	} else if (syscallno == SYS_yield) {
+		sys_yield();
+		return 0;
 	} else {
-		cprintf("syscall default error\n");
-		return -E_NO_SYS;
+		cprintf("unknown syscall error\n");
+		return -E_INVAL;
 	}
-	panic("syscall not implemented");
-}

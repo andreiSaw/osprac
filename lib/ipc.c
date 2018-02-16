@@ -63,7 +63,6 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 	if (result) {
 		panic("ipc send panic");
 	}
-
 }
 
 // Find the first environment of the given type.  We'll use this to
