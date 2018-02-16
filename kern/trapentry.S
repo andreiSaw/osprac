@@ -57,7 +57,16 @@
 .type _alltraps, @function;
 .align 2
 _alltraps:
-    jmp .
+// lab 8
+  pushl %ds
+  pushl %es
+  pushal
+  movw $GD_KD, %ax
+  movw %ax, %ds
+  movw %ax, %es
+  pushl %esp
+  call trap
+
 
 .globl clock_thdlr
 .type clock_thdlr, @function;
@@ -94,6 +103,31 @@ clock_thdlr:
 	call trap
 	jmp .
 #else
-TRAPHANDLER_NOEC(clock_thdlr, IRQ_OFFSET + IRQ_CLOCK)
+TRAPHANDLER_NOEC(clock_thdlr, IRQ_OFFSET + IRQ_CLOCK);
 // LAB 8: Your code here.
+TRAPHANDLER_NOEC(thdlr0, 0);
+TRAPHANDLER_NOEC(thdlr1, 1);
+TRAPHANDLER_NOEC(thdlr2, 2);
+TRAPHANDLER_NOEC(thdlr3, 3);
+TRAPHANDLER_NOEC(thdlr4, 4);
+TRAPHANDLER_NOEC(thdlr5, 5);
+TRAPHANDLER_NOEC(thdlr6, 6);
+TRAPHANDLER_NOEC(thdlr7, 7);
+TRAPHANDLER(thdlr8, 8);
+TRAPHANDLER(thdlr10, 10);
+TRAPHANDLER(thdlr11, 11);
+TRAPHANDLER(thdlr12, 12);
+TRAPHANDLER(thdlr13, 13);
+TRAPHANDLER(thdlr14, 14);
+TRAPHANDLER_NOEC(thdlr16, 16);
+TRAPHANDLER(thdlr17, 17);
+TRAPHANDLER_NOEC(thdlr18, 18);
+TRAPHANDLER_NOEC(thdlr19, 19);
+TRAPHANDLER_NOEC(thdlr48, 48);
+TRAPHANDLER_NOEC(irq_thdlr0, IRQ_OFFSET + 0);
+TRAPHANDLER_NOEC(irq_thdlr1, IRQ_OFFSET + 1);
+TRAPHANDLER_NOEC(irq_thdlr4, IRQ_OFFSET + 4);
+TRAPHANDLER_NOEC(irq_thdlr7, IRQ_OFFSET + 7);
+TRAPHANDLER_NOEC(irq_thdlr14, IRQ_OFFSET + 14);
+TRAPHANDLER_NOEC(irq_thdlr19, IRQ_OFFSET + 19);
 #endif

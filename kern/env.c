@@ -8,7 +8,6 @@
 #include <inc/elf.h>
 #include <kern/kdebug.h>
 
-
 #include <kern/env.h>
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -36,7 +35,7 @@ static struct Env *env_free_list;	// Free environment list
 // Set up global descriptor table (GDT) with separate segments for
 // kernel mode and user mode.  Segments serve many purposes on the x86.
 // We don't use any of their memory-mapping capabilities, but we need
-// them to switch privilege levels. 
+// them to switch privilege levels.
 //
 // The kernel and user segments are identical except for the DPL.
 // To load the SS register, the CPL must equal the DPL.  Thus,
@@ -141,7 +140,7 @@ env_init(void)
 		if (last) {
 			last->env_link = &envs[i];
 		} else {
-			env_free_list = &envs[i];	
+			env_free_list = &envs[i];
 		}
 
 		last = &envs[i];
@@ -208,6 +207,9 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 8: Your code here.
+	e->env_pgdir = (pde_t *) page2kva(p);
+	p->pp_ref++;
+	memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -314,6 +316,15 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	void *start = ROUNDDOWN(va, PGSIZE);
+	void *end = ROUNDUP(va + len, PGSIZE);
+	for (; start < end; start += PGSIZE) {
+		struct PageInfo *page = page_alloc(0);
+		if (!page) {
+			panic("region alloc panic");
+		}
+		page_insert(e->env_pgdir, page, start, PTE_P | PTE_W | PTE_U);
+	}
 }
 
 #ifdef CONFIG_KSPACE
@@ -324,30 +335,30 @@ bind_functions(struct Env *e, struct Elf *elf)
 	//LAB 3: Your code here.
 
     // section headers table
-	struct Secthdr *sh = (struct Secthdr *)((uint8_t *)elf + elf->e_shoff); 
-	
+	struct Secthdr *sh = (struct Secthdr *)((uint8_t *)elf + elf->e_shoff);
+
     // section name string table
     char *sname_strtable = (char *)elf + (sh + elf->e_shstrndx)->sh_offset;
-	
+
     uint32_t i;
-	for (i = 0; i < elf->e_shnum; i++) {		
+	for (i = 0; i < elf->e_shnum; i++) {
 		if (sh[i].sh_type == ELF_SHT_STRTAB) {
-			char *tabname = sname_strtable + sh[i].sh_name;			
+			char *tabname = sname_strtable + sh[i].sh_name;
 			if (strncmp(tabname, ".strtab", 7) == 0) {
 				break;
 			}
 		}
 	}
-    
+
 	// string table of symbol table entries
 	char *st_strtable = (char *)elf + sh[i].sh_offset;
-	
-	for (i = 0; i < elf->e_shnum; i++) {		
+
+	for (i = 0; i < elf->e_shnum; i++) {
 		if (sh[i].sh_type == ELF_SHT_SYMTAB) {
-			
+
 			struct Elf32_Sym *st = (struct Elf32_Sym *)((uint8_t *)elf + sh[i].sh_offset);
 			uint8_t entry_count = sh[i].sh_size / sh[i].sh_entsize;
-			
+
 			uint32_t j;
 			for (j = 0; j < entry_count; j++) {
 				const char *fname = st_strtable + st[j].st_name;
@@ -429,26 +440,29 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 
 	struct Proghdr *ph, *eph;
     struct Elf *ELFHDR = (struct Elf *)binary;
-    
+
     // is this a valid ELF?
 	if (ELFHDR->e_magic != ELF_MAGIC)
 		panic("bad binary\n");
 
 	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
 	eph = ph + ELFHDR->e_phnum;
-	
+	// LAB 8
+	lcr3(PADDR(e->env_pgdir));
     for (; ph < eph; ph++) {
-		
-		if (ph->p_type == ELF_PROG_LOAD) {
 
-            memmove((void *)ph->p_va, (void *)(binary + ph->p_offset), ph->p_filesz);
-            memset((void *)ph->p_va + ph->p_filesz, 0, (ph->p_memsz - ph->p_filesz));
+		if (ph->p_type == ELF_PROG_LOAD) {
+			// LAB 8
+			region_alloc(e, (void *) ph->p_va, ph->p_memsz);
+
+      memmove((void *)ph->p_va, (void *)(binary + ph->p_offset), ph->p_filesz);
+      memset((void *)ph->p_va + ph->p_filesz, 0, (ph->p_memsz - ph->p_filesz));
         }
     }
 
     e->env_tf.tf_eip = ELFHDR->e_entry;
 
-	
+
 #ifdef CONFIG_KSPACE
 	// Uncomment this for task №5.
 	//bind_functions();
@@ -458,6 +472,8 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 	// LAB 8: Your code here.
+	region_alloc(e, (void *)USTACKTOP - PGSIZE, PGSIZE);
+	lcr3(PADDR(kern_pgdir));
 }
 
 //
@@ -478,7 +494,6 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
     } else {
         panic("alloc error\n");
     }
-
 }
 
 //
@@ -670,6 +685,7 @@ env_run(struct Env *e)
     curenv = e;
     curenv->env_status = ENV_RUNNING;
     curenv->env_runs++;
+	// lab 8
+	lcr3(PADDR(curenv->env_pgdir));
 	env_pop_tf(&e->env_tf);
 }
-

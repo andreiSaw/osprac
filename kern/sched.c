@@ -25,35 +25,28 @@ sched_yield(void)
 	// simply drop through to the code
 	// below to halt the cpu.
 
-	//LAB 3: Your code here.
-	if (curenv) {	
-		uint32_t id = ENVX(curenv->env_id);
-		
-		uint32_t i;	
-		for (i = 1; i < NENV; i++) {
-			uint32_t j = (id + i) % NENV;		
-			if (envs[j].env_status == ENV_RUNNABLE) {
-				env_run(&envs[j]);
-				return;
-			}
-		}
+	// LAB 3: Your code here.
+	//cprintf("TEST0\n");
+	int i;
+	uint32_t id = curenv ? ENVX(curenv->env_id) : 0;
+	uint32_t first = (++id) % NENV;
+	uint32_t next;
 
-		if (curenv->env_status == ENV_RUNNING) {
-			env_run(curenv);
-			return;
-		}
-	} else {
-		uint32_t i;
-		for (i = 1; i < NENV; i++) {
-			uint32_t j = i % NENV;
-			if (envs[j].env_status == ENV_RUNNABLE) {
-				env_run(&envs[j]);
-				return;
-			}
+	for (i = 0; i < NENV; i++) {
+		next = (first + i) % NENV;
+
+		if (envs[next].env_status == ENV_RUNNABLE) {
+			env_run(&envs[next]);
+			break;
 		}
 	}
-	sched_halt();	
 
+	if (curenv && curenv->env_status == ENV_RUNNING) {
+		env_run(curenv);
+		return;
+	}
+
+	sched_halt();
 }
 
 // Halt this CPU when there is nothing to do. Wait until the
@@ -90,4 +83,3 @@ sched_halt(void)
 		"hlt\n"
 	: : "a" (cpu_ts.ts_esp0));
 }
-

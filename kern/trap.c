@@ -75,8 +75,58 @@ trap_init(void)
 //	extern struct Segdesc gdt[];
 
 	// LAB 8: Your code here.
+	extern void thdlr0();
+	extern void thdlr1();
+	extern void thdlr2();
+	extern void thdlr3();
+	extern void thdlr4();
+	extern void thdlr5();
+	extern void thdlr6();
+	extern void thdlr7();
+	extern void thdlr8();
+	extern void thdlr10();
+	extern void thdlr11();
+	extern void thdlr12();
+	extern void thdlr13();
+	extern void thdlr14();
+	extern void thdlr16();
+	extern void thdlr17();
+	extern void thdlr18();
+	extern void thdlr19();
+	extern void thdlr48();
+	extern void irq_thdlr0();
+	extern void irq_thdlr1();
+	extern void irq_thdlr4();
+	extern void irq_thdlr7();
+	extern void irq_thdlr14();
+	extern void irq_thdlr19();
 
-	// Per-CPU setup 
+	SETGATE(idt[0], 0, GD_KT, thdlr0, 0);
+	SETGATE(idt[1], 0, GD_KT, thdlr1, 0);
+	SETGATE(idt[2], 0, GD_KT, thdlr2, 0);
+	SETGATE(idt[3], 0, GD_KT, thdlr3, 3);
+	SETGATE(idt[4], 0, GD_KT, thdlr4, 0);
+	SETGATE(idt[5], 0, GD_KT, thdlr5, 0);
+	SETGATE(idt[6], 0, GD_KT, thdlr6, 0);
+	SETGATE(idt[7], 0, GD_KT, thdlr7, 0);
+	SETGATE(idt[8], 0, GD_KT, thdlr8, 0);
+	SETGATE(idt[10], 0, GD_KT, thdlr10, 0);
+	SETGATE(idt[11], 0, GD_KT, thdlr11, 0);
+	SETGATE(idt[12], 0, GD_KT, thdlr12, 0);
+	SETGATE(idt[13], 0, GD_KT, thdlr13, 0);
+	SETGATE(idt[14], 0, GD_KT, thdlr14, 0);
+	SETGATE(idt[16], 0, GD_KT, thdlr16, 0);
+	SETGATE(idt[17], 0, GD_KT, thdlr17, 0);
+	SETGATE(idt[18], 0, GD_KT, thdlr18, 0);
+	SETGATE(idt[19], 0, GD_KT, thdlr19, 0);
+	SETGATE(idt[48], 0, GD_KT, thdlr48, 3);
+	SETGATE(idt[IRQ_OFFSET + 0], 0, GD_KT, irq_thdlr0, 0);
+	SETGATE(idt[IRQ_OFFSET + 1], 0, GD_KT, irq_thdlr1, 0);
+	SETGATE(idt[IRQ_OFFSET + 4], 0, GD_KT, irq_thdlr1, 0);
+	SETGATE(idt[IRQ_OFFSET + 7], 0, GD_KT, irq_thdlr1, 0);
+	SETGATE(idt[IRQ_OFFSET + 19], 0, GD_KT, irq_thdlr1, 0);
+
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -175,10 +225,22 @@ trap_dispatch(struct Trapframe *tf)
 
 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_CLOCK) {
 
-//my code
-		uint8_t status = rtc_check_status();
-		pic_send_eoi(status);
-//end
+// LAB 8
+	if (tf->tf_trapno == T_BRKPT) {
+		return monitor(tf);
+	}
+
+	if (tf->tf_trapno == T_PGFLT) {
+		return page_fault_handler(tf);
+	}
+
+	if (tf->tf_trapno == T_SYSCALL) {
+		struct PushRegs *regs = &(tf->tf_regs);
+		regs->reg_eax = syscall(regs->reg_eax, regs->reg_edx, regs->reg_ecx, regs->reg_ebx, regs->reg_edi, regs->reg_esi);
+		return;
+	}
+
+
 		sched_yield();
 		return;
 	}
@@ -256,6 +318,9 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 8: Your code here.
+	if ((tf->tf_cs & 3) == 0) {
+		panic("page fault in kernel mode\n");
+	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
@@ -266,4 +331,3 @@ page_fault_handler(struct Trapframe *tf)
 	print_trapframe(tf);
 	env_destroy(curenv);
 }
-
