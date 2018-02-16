@@ -652,12 +652,12 @@ env_pop_tf(struct Trapframe *tf)
 void
 env_run(struct Env *e)
 {
-#ifdef CONFIG_KSPACE
-	cprintf("envrun %s: %d\n",
-		e->env_status == ENV_RUNNING ? "RUNNING" :
-		    e->env_status == ENV_RUNNABLE ? "RUNNABLE" : "(unknown)",
-		ENVX(e->env_id));
-#endif
+//#ifdef CONFIG_KSPACE
+//	cprintf("envrun %s: %d\n",
+//		e->env_status == ENV_RUNNING ? "RUNNING" :
+//		    e->env_status == ENV_RUNNABLE ? "RUNNABLE" : "(unknown)",
+//		ENVX(e->env_id));
+//#endif
 
 	// Step 1: If this is a context switch (a new environment is running):
 	//	   1. Set the current environment (if any) back to

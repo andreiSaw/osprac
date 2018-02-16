@@ -32,6 +32,7 @@ static struct Command commands[] = {
   { "timer_stop", "stop timer", mon_stop },
 	{ "pages", "Display free and allocated pages", mon_pages },
 	{ "test", "Display some text", mon_test},
+    { "message", "Display information about the kernel", mon_message },
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -100,6 +101,14 @@ mon_pages(int argc, char **argv, struct Trapframe *tf) {
 			cprintf("%d..%d FREE\n", j + 1, npages);
 		}
 	}
+	}		
+	return 0;
+}
+
+int
+mon_message(int argc, char **argv, struct Trapframe *tf)
+{
+	cprintf("Special Message %o\n", 9);
 	return 0;
 }
 

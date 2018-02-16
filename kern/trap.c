@@ -223,9 +223,7 @@ trap_dispatch(struct Trapframe *tf)
 		return;
 	}
 
-	if (tf->tf_trapno == IRQ_OFFSET + IRQ_CLOCK) {
-
-// LAB 8
+	// LAB 8
 	if (tf->tf_trapno == T_BRKPT) {
 		return monitor(tf);
 	}
@@ -241,6 +239,9 @@ trap_dispatch(struct Trapframe *tf)
 	}
 
 
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_CLOCK) {
+		uint8_t status = rtc_check_status();
+		pic_send_eoi(status);
 		sched_yield();
 		return;
 	}
@@ -302,8 +303,9 @@ trap(struct Trapframe *tf)
 	// if doing so makes sense.
 	if (curenv && curenv->env_status == ENV_RUNNING)
 		env_run(curenv);
-	else
+	} else {
 		sched_yield();
+	}
 }
 
 
