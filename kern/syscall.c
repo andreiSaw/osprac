@@ -94,6 +94,7 @@ sys_exofork(void)
 		return res;
 	}
 	env->env_tf = curenv->env_tf; // copy register set
+	// Make the new environment return zero.
 	env->env_tf.tf_regs.reg_eax = 0; // tweak env so sys_exofork will return 0
 	env->env_status = ENV_NOT_RUNNABLE;
 	return env->env_id;
@@ -191,7 +192,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		// or the caller doesn't have permission to change it
 		return -E_BAD_ENV;
 	}
-	struct PageInfo *page = page_alloc(0);
+	struct PageInfo *page = page_alloc(ALLOC_ZERO);
 	if (!page) {
 		return -E_NO_MEM;
 	}
