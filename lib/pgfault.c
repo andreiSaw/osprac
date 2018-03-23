@@ -27,14 +27,14 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	if (_pgfault_handler == 0) {
 		// First time through!
 		// LAB 9: Your code here.
+
+		// env_id = 0 => current env
 		if (sys_page_alloc(0, (void *)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W)) {
 			panic("pgfualt handler panic");
 		}
+		sys_env_set_pgfault_upcall(0, _pgfault_upcall);
 	}
 
 	// Save handler pointer for assembly to call.
 	_pgfault_handler = handler;
-
-	// LAB 9
-	sys_env_set_pgfault_upcall(0, _pgfault_upcall);
 }

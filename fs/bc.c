@@ -33,8 +33,6 @@ bc_pgfault(struct UTrapframe *utf)
 	uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
 	int r;
 
-	cprintf("addr %p\n", addr);
-
 	// Check that the fault was within the block cache region
 	if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
 		panic("page fault in FS: eip %p, va %p, err %04x",
