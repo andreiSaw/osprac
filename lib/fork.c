@@ -62,6 +62,19 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
+	// LAB 9: Your code here.
+	void *addr = (void *)(pn * PGSIZE);
+	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
+		int perm = ((uvpt[pn] & PTE_SYSCALL) & (~PTE_W)) | PTE_COW;
+		if ((sys_page_map(0, addr, envid, addr, perm) < 0) || (sys_page_map(0, addr, 0, addr, perm) < 0)) {
+			panic("duppage : w | cow mapping failed");
+		}
+	} else {
+		int perm = uvpt[pn] & PTE_SYSCALL;
+		if (sys_page_map(0, addr, envid, addr, perm) < 0) {
+			panic("duppage : readonly mapping failed");
+		}
+	}
 	if(uvpt[pn] & PTE_SHARE){
 		if ((r = sys_page_map(0, addr, envid, addr, uvpt[pn] & PTE_SYSCALL)) < 0)
 	  	return r;
