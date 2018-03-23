@@ -75,6 +75,7 @@ duppage(envid_t envid, unsigned pn)
 			panic("duppage : readonly mapping failed");
 		}
 	}
+	int r;
 	if(uvpt[pn] & PTE_SHARE){
 		if ((r = sys_page_map(0, addr, envid, addr, uvpt[pn] & PTE_SYSCALL)) < 0)
 	  	return r;
