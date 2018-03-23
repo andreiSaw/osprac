@@ -14,9 +14,10 @@ void monitor(struct Trapframe *tf);
 // Functions implementing monitor commands.
 int mon_help(int argc, char **argv, struct Trapframe *tf);
 int mon_kerninfo(int argc, char **argv, struct Trapframe *tf);
-int mon_message(int argc, char **argv, struct Trapframe *tf);
+int mon_hello_world(int argc, char **argv, struct Trapframe *tf);
 int mon_backtrace(int argc, char **argv, struct Trapframe *tf);
-int mon_start(int argc, char **argv, struct Trapframe *tf);
-int mon_stop(int argc, char **argv, struct Trapframe *tf);
-int mon_pages(int argc, char **argv, struct Trapframe *tf);
+int mon_timer_start(int argc, char **argv, struct Trapframe *tf);
+int mon_timer_stop(int argc, char **argv, struct Trapframe *tf);
+int mon_page_list(int argc, char **argv, struct Trapframe *tf);
+
 #endif	// !JOS_KERN_MONITOR_H

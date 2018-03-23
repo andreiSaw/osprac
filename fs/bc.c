@@ -33,6 +33,8 @@ bc_pgfault(struct UTrapframe *utf)
 	uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
 	int r;
 
+	cprintf("addr %p\n", addr);
+
 	// Check that the fault was within the block cache region
 	if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
 		panic("page fault in FS: eip %p, va %p, err %04x",
@@ -48,14 +50,13 @@ bc_pgfault(struct UTrapframe *utf)
 	// the disk.
 	//
 	// LAB 10: you code here:
-
-	addr = ROUNDDOWN(addr, PGSIZE);
-   r = sys_page_alloc(0, addr, PTE_P | PTE_U | PTE_W);
-   if(r != 0)
-       panic("bc.c: paga_alloc failed %i", r);
-   r = ide_read(blockno * BLKSECTS, addr, BLKSECTS);
-   if(r != 0)
-       panic("bc.c: ide_read failed %i", r);
+	void *page_addr = ROUNDDOWN(addr, PGSIZE);
+	if ((r = sys_page_alloc(0, page_addr, (PTE_U|PTE_P|PTE_W)))) {
+		panic("in bc_pgfault, sys_page_alloc failed: %i", r);
+	}
+	if ((r = ide_read(blockno * BLKSECTS, page_addr, BLKSECTS))) {
+		panic("in bc_pgfault, ide_read failed: %i", r);
+	}
 
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
@@ -85,19 +86,16 @@ flush_block(void *addr)
 		panic("flush_block of bad va %p", addr);
 
 	// LAB 10: Your code here.
-	// panic("flush_block not implemented");
-	 int r;
-	 if (!(va_is_mapped(addr) && va_is_dirty(addr)))
-			 return;
-	 addr = ROUNDDOWN(addr, PGSIZE);
-	 if(va_is_mapped(addr) && va_is_dirty(addr)){
-			 r = ide_write(blockno * BLKSECTS, addr, BLKSECTS);
-			 if(r != 0)
-					 panic("flush_block: ide_write failed %i", r);
-			 r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL);
-			 if(r != 0)
-					 panic("flush_block: sys_page_map failed %i", r);
-	 }
+	int r;
+	if (va_is_mapped(addr) && va_is_dirty(addr)) {
+		void *page_addr = ROUNDDOWN(addr, PGSIZE);
+		if ((r = ide_write(blockno * BLKSECTS, page_addr, BLKSECTS))) {
+			panic("in flush_block, ide_write: %i", r);
+		}
+		if ((r = sys_page_map(0, page_addr, 0, page_addr, uvpt[PGNUM(page_addr)] & PTE_SYSCALL)) < 0) {
+			panic("in flush_block, sys_page_map: %i", r);
+		}
+	}
 }
 
 // Test that the block cache works, by smashing the superblock and
@@ -140,3 +138,4 @@ bc_init(void)
 	// cache the super block by reading it once
 	memmove(&super, diskaddr(1), sizeof super);
 }
+

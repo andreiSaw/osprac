@@ -11,6 +11,12 @@ static Header base = { .s = { .next = (Header *) space, .prev = (Header *) space
 
 static Header *freep = NULL; /* start of free list */
 
+// The big alloc lock
+struct spinlock alloc_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "alloc_lock"
+#endif
+};
 
 static void check_list(void)
 {
@@ -31,13 +37,12 @@ static void check_list(void)
 void *
 test_alloc(uint8_t nbytes)
 {
+	spin_lock(&alloc_lock);		
+
 	Header *p;
 	unsigned nunits;
 
 	nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1;
-
-	// LAB 5
-	spin_lock(&kernel_lock);
 
 	if (freep == NULL) { /* no free list yet */
 		((Header *) &space)->s.next = (Header *) &base;
@@ -59,16 +64,11 @@ test_alloc(uint8_t nbytes)
 				p += p->s.size;
 				p->s.size = nunits;
 			}
-
-			// LAB 5
-			spin_unlock(&kernel_lock);
-
+			spin_unlock(&alloc_lock);
 			return (void *)(p + 1);
 		}
 		if (p == freep) { /* wrapped around free list */
-
-			// LAB 5
-			spin_unlock(&kernel_lock);
+			spin_unlock(&alloc_lock);			
 			return NULL;
 		}
 	}
@@ -78,17 +78,14 @@ test_alloc(uint8_t nbytes)
 void
 test_free(void *ap)
 {
+	spin_lock(&alloc_lock);		
+
 	Header *bp, *p;
-
-	// LAB 5
-	spin_lock(&kernel_lock);
-
 	bp = (Header *) ap - 1; /* point to block header */
 
 	for (p = freep; !(bp > p && bp < p->s.next); p = p->s.next)
 		if (p >= p->s.next && (bp > p || bp < p->s.next))
 			break; /* freed block at start or end of arena */
-
 	if (bp + bp->s.size == p->s.next && p + p->s.size == bp) { /* join to both */
 		p->s.size += bp->s.size + p->s.next->s.size;
 		p->s.next->s.next->s.prev = p;
@@ -109,8 +106,8 @@ test_free(void *ap)
 	}
 	freep = p;
 
-	// LAB 5
-	spin_unlock(&kernel_lock);
-
 	check_list();
+	
+	spin_unlock(&alloc_lock);
 }
+

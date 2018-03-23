@@ -142,9 +142,6 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 		// Make sure this memory is valid.
 		// Return -1 if it is not.  Hint: Call user_mem_check.
 		// LAB 8: Your code here.
-		if (user_mem_check(curenv, usd, sizeof(struct UserStabData), PTE_U) < 0) {
-			return -1;
-		}
 
 		stabs = usd->stabs;
 		stab_end = usd->stab_end;
@@ -153,13 +150,6 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 
 		// Make sure the STABS and string table memory is valid.
 		// LAB 8: Your code here.
-
-		if (user_mem_check(curenv, stabs, stab_end - stabs + 1, PTE_U) < 0) {
-					return -1;
-		}
-		if (user_mem_check(curenv, stabstr, stabstr_end - stabstr + 1, PTE_U) < 0) {
-					return -1;
-		}
 	}
 
 	// String table validity checks
@@ -214,12 +204,12 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 	//	Look at the STABS documentation and <inc/stab.h> to find
 	//	which one.
 	// Your code here.
-    stab_binsearch(stabs, &lline, &rline, N_SLINE, addr);
-    if (lline <= rline) {
-		info->eip_line = stabs[lline].n_desc;
-	} else {
-		info->eip_line = -1;
-	}
+	stab_binsearch(stabs, &lline, &rline, N_SLINE, addr);	
+	if (lline <= rline)
+		info->eip_line = stabs[rline].n_desc;
+	else
+		return -1;
+
 
 	// Search backwards from the line number for the relevant filename
 	// stab.
@@ -248,23 +238,57 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 uintptr_t
 find_function(const char * const fname)
 {
-	 const struct Stab *stabs = __STAB_BEGIN__, *stab_end = __STAB_END__;
-	 const char *stabstr = __STABSTR_BEGIN__;
+	const struct Stab *stabs = __STAB_BEGIN__, *stab_end = __STAB_END__;
+	const char *stabstr = __STABSTR_BEGIN__;//, *stabstr_end = __STABSTR_END__;
 	//LAB 3: Your code here.
-	int count;
-    count = stab_end - stabs;
-	int i;
-	for (i = 0; i <= count; i++) {
-		if ((stabs+i)->n_type == N_FUN) {
-            const char *name = stabstr + (stabs + i)->n_strx;
-		    uint8_t p = strfind(name, ':') - name;
-			char tmp[p + 1];
-			tmp[p] = '\0';
-			memcpy(tmp, name, p);
-			if (strcmp(fname, tmp) == 0) {
-			    return (stabs + i)->n_value;
-		    }
-        }
+
+	for (; stabs < stab_end; stabs++) {
+		if (stabs->n_type == N_FUN) {
+			uint32_t start_index = stabs->n_strx;
+			int current_index = start_index;
+			int length = 0;
+		
+			// find length
+			while (stabstr[current_index] != '\0') {
+				if (stabstr[current_index] == ':') break;
+				current_index++;
+				length++;
+			}
+			length++;
+
+			char string[length];
+			current_index = start_index;
+			int index_in_string = 0;
+			
+			// fill string
+			while (stabstr[current_index] != '\0') {
+				if (stabstr[current_index] == ':') break;	
+				string[index_in_string] = stabstr[current_index];
+				index_in_string++;
+				current_index++;
+			}
+			string[length - 1] = '\0';
+
+			if (strcmp(string, fname) == 0)
+				return  stabs->n_value;
+		}		
 	}
+
+	/*int index = 0;
+	int end = (stab_end - stabs) - 1;
+	for (; index <= end; ++index) {
+		if (stabs[index].n_type == N_FUN) {
+			if (stabs[index].n_strx < stabstr_end - stabstr) {
+				const char* fun_name = stabstr + stabs[index].n_strx;
+				int fun_len = strfind(fun_name, ':') - fun_name;
+				char* true_fun_name = "";
+				strncpy(true_fun_name, fun_name, fun_len);
+				if (strcmp(true_fun_name, fname) == 0)
+					return  stabs[index].n_value;
+			}
+		}	
+	}*/
+	
 	return 0;
 }
+

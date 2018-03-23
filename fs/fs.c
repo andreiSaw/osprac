@@ -46,6 +46,17 @@ free_block(uint32_t blockno)
 	bitmap[blockno/32] |= 1<<(blockno%32);
 }
 
+// LAB 10
+// Mark a block unfree in the bitmap
+void
+unfree_block(uint32_t blockno)
+{
+	// Blockno zero is the null pointer of block numbers.
+	if (blockno == 0)
+		panic("attempt to unfree zero block");
+	bitmap[blockno/32] &= ~(1<<(blockno%32));
+}
+
 // Search the bitmap for a free block and allocate it.  When you
 // allocate a block, immediately flush the changed bitmap block
 // to disk.
@@ -62,15 +73,16 @@ alloc_block(void)
 	// super->s_nblocks blocks in the disk altogether.
 
 	// LAB 10: Your code here.
-	int i = 0;
-    for (i = 0; i < super->s_nblocks; i++) {
-        if (block_is_free(i)) {
-            bitmap[i / 32] &= ~(1 << ( i %32));
-            flush_block(diskaddr(i + 2));
-            return i;
-        }
-    }
-	//panic("alloc_block not implemented");
+	
+	uint32_t blockno = 0;
+	for (blockno = 0; blockno != super->s_nblocks * BLKBITSIZE; ++blockno) {
+		if (block_is_free(blockno)) {
+			unfree_block(blockno);
+			flush_block(diskaddr(blockno));
+			return blockno;
+		}
+	}
+
 	return -E_NO_DISK;
 }
 
@@ -120,7 +132,7 @@ fs_init(void)
 	// Set "bitmap" to the beginning of the first bitmap block.
 	bitmap = diskaddr(2);
 	check_bitmap();
-
+	
 }
 
 // Find the disk block number slot for the 'filebno'th block in file 'f'.
@@ -142,28 +154,30 @@ fs_init(void)
 static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
-       // LAB 10: Your code here.
-			 int blockno;
-		   if (filebno > NDIRECT + NINDIRECT)
-		        return -E_INVAL;
-		   if(filebno < NDIRECT)
-		        *ppdiskbno = &f->f_direct[filebno];
-		   else{
-		        if(!f->f_indirect) {
-		            if(alloc){
-		                blockno = alloc_block();
-		                if(blockno < 0)
-		                    return -E_NO_DISK;
-		                memset(diskaddr(blockno), 0, BLKSIZE);
-		                f->f_indirect = blockno;
-		            }
-		            else
-		                return -E_NOT_FOUND;
-		        }
-		        *ppdiskbno = &((uintptr_t *) diskaddr(f->f_indirect))[filebno - NDIRECT];
-		    }
-		   return 0;
-       //panic("file_block_walk not implemented");
+	// LAB 10: Your code here.
+	if (filebno <= NDIRECT) {
+		// block can be found directly
+		*ppdiskbno = &f->f_direct[filebno];
+		return 0;
+	} else if (filebno <= NDIRECT + NINDIRECT) {
+		// block must be found indirectly		
+		if (!f->f_indirect) {
+			if (!alloc) {
+				return -E_NOT_FOUND;
+			}
+			// allocate indirect block
+			if ((f->f_indirect = alloc_block())) {
+				return -E_NO_DISK;
+			}
+			// clear block
+			memset(diskaddr(f->f_indirect), 0, BLKSIZE);
+		}
+		uint32_t *indir_block_addr = (uint32_t *)diskaddr(f->f_indirect);
+		*ppdiskbno = &indir_block_addr[filebno - NDIRECT];
+		return 0;
+	} else {
+		return -E_INVAL;
+	}
 }
 
 // Set *blk to the address in memory where the filebno'th
@@ -178,20 +192,22 @@ int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
        // LAB 10: Your code here.
-			 uint32_t *ppdiskbno;
-			int r;
-			r = file_block_walk(f, filebno, &ppdiskbno, 1);
-			if(r < 0)
-					return r;
-			if(! (*ppdiskbno)){
-					r = alloc_block();
-					if(r < 0)
-							return -E_NO_DISK;
-					*ppdiskbno = r;
-			}
-			*blk = diskaddr(*ppdiskbno);
-			return 0;
-       //panic("file_get_block not implemented");
+	uint32_t * ppdiskbno;
+	int r = file_block_walk(f, filebno, &ppdiskbno, true);
+	if (r) {
+		return r;
+	}
+	// if not exists yet
+	if (!*ppdiskbno) {
+		*ppdiskbno = alloc_block();
+	}
+	// if allocation failed	
+	if (!*ppdiskbno) {
+		return -E_NO_DISK;
+	}
+
+	*blk = (char *)diskaddr(*ppdiskbno);
+	return 0;
 }
 
 // Try to find a file named "name" in dir.  If so, set *file to it.
@@ -494,3 +510,4 @@ fs_sync(void)
 	for (i = 1; i < super->s_nblocks; i++)
 		flush_block(diskaddr(i));
 }
+
