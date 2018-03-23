@@ -52,10 +52,10 @@ bc_pgfault(struct UTrapframe *utf)
 	addr = ROUNDDOWN(addr, PGSIZE);
    r = sys_page_alloc(0, addr, PTE_P | PTE_U | PTE_W);
    if(r != 0)
-       panic("bc.c: paga_alloc failed %e", r);
+       panic("bc.c: paga_alloc failed %p", r);
    r = ide_read(blockno * BLKSECTS, addr, BLKSECTS);
    if(r != 0)
-       panic("bc.c: ide_read failed %e", r);
+       panic("bc.c: ide_read failed %p", r);
 
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
