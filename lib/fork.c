@@ -62,35 +62,11 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
-	// LAB 11
-	pte_t pte = uvpt[pn];
-	void *va = (void *)(pn << PGSHIFT);
-
-	// If the page is writable or copy-on-write,
-	// the mapping must be copy-on-write ,
-	// otherwise the new environment could change this page.
-	if ((pte & PTE_W) || (pte & PTE_COW)) {
-			if (sys_page_map(0,
-											 va,
-											 envid,
-											 va,
-											 PTE_COW | PTE_U | PTE_P))
-					panic("duppage: map cow error");
-
-			// Change permission of the page in this environment to copy-on-write.
-			// Otherwise the new environment would see the change in this environment.
-			if (sys_page_map(0,
-											 va,
-											 0,
-											 va,
-											 PTE_COW | PTE_U | PTE_P))
-					panic("duppage: change perm error");
-	} else if (sys_page_map(0,
-													va,
-													envid,
-													va,
-													PTE_U | PTE_P))
-			panic("duppage: map ro error");
+	if(uvpt[pn] & PTE_SHARE){
+		if ((r = sys_page_map(0, addr, envid, addr, uvpt[pn] & PTE_SYSCALL)) < 0)
+	  	return r;
+	  return 0;
+	   }
 	return 0;
 }
 //
