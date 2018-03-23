@@ -208,7 +208,7 @@ int
 serve_read(envid_t envid, union Fsipc *ipc)
 {
 	struct Fsreq_read *req = &ipc->read;
-	//struct Fsret_read *ret = &ipc->readRet;
+	struct Fsret_read *ret = &ipc->readRet;
 
 	if (debug)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
