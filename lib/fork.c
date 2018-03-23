@@ -24,11 +24,11 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 9: Your code here.
-	if (!((err & FEC_WR) && 
-		(uvpd[PDX(addr)] & PTE_P) && 
+	if (!((err & FEC_WR) &&
+		(uvpd[PDX(addr)] & PTE_P) &&
 		(uvpt[PGNUM(addr)] & PTE_P) &&
 		(uvpt[PGNUM(addr)] & PTE_COW))) {
-		panic("pgfault faulting access panic");	
+		panic("pgfault faulting access panic");
 	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
@@ -42,7 +42,7 @@ pgfault(struct UTrapframe *utf)
 	addr = ROUNDDOWN(addr, PGSIZE);
 	sys_page_alloc(0, PFTEMP, PTE_W | PTE_P | PTE_U);
 	memcpy(PFTEMP, addr, PGSIZE);
-	
+
 	int perm = (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W;
 	sys_page_map(0, PFTEMP, 0, addr, perm);
 	sys_page_unmap(0, PFTEMP);
@@ -62,23 +62,38 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
-	// LAB 9: Your code here.
-	void *addr = (void *)(pn * PGSIZE);
-	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
-		int perm = ((uvpt[pn] & PTE_SYSCALL) & (~PTE_W)) | PTE_COW;
-		if ((sys_page_map(0, addr, envid, addr, perm) < 0) || (sys_page_map(0, addr, 0, addr, perm) < 0)) {
-			panic("duppage : w | cow mapping failed");		
-		}
-	} else {
-		int perm = uvpt[pn] & PTE_SYSCALL;
-		if (sys_page_map(0, addr, envid, addr, perm) < 0) {
-			panic("duppage : readonly mapping failed");
-		}
-	}	
-	
-	return 0;
-}
+	int r;
+	// LAB 11
+	pte_t pte = vpt[pn];
+	void *va = (void *)(pn << PGSHIFT);
 
+	// If the page is writable or copy-on-write,
+	// the mapping must be copy-on-write ,
+	// otherwise the new environment could change this page.
+	if ((pte & PTE_W) || (pte & PTE_COW)) {
+			if (sys_page_map(0,
+											 va,
+											 envid,
+											 va,
+											 PTE_COW | PTE_U | PTE_P))
+					panic("duppage: map cow error");
+
+			// Change permission of the page in this environment to copy-on-write.
+			// Otherwise the new environment would see the change in this environment.
+			if (sys_page_map(0,
+											 va,
+											 0,
+											 va,
+											 PTE_COW | PTE_U | PTE_P))
+					panic("duppage: change perm error");
+	} else if (sys_page_map(0,
+													va,
+													envid,
+													va,
+													PTE_U | PTE_P))
+			panic("duppage: map ro error");
+
+}
 //
 // User-level fork with copy-on-write.
 // Set up our page fault handler appropriately.
@@ -113,7 +128,7 @@ fork(void)
 	int i;
 	for (i = 0; i < USTACKTOP; i += PGSIZE) {
 		if ((uvpd[PDX(i)] & PTE_P) && (uvpt[PGNUM(i)] & PTE_P) && (uvpt[PGNUM(i)] & PTE_U)) {
-			duppage(env_id, PGNUM(i));		
+			duppage(env_id, PGNUM(i));
 		}
 	}
 	sys_page_alloc(env_id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
