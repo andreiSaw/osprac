@@ -52,10 +52,10 @@ bc_pgfault(struct UTrapframe *utf)
 	addr = ROUNDDOWN(addr, PGSIZE);
    r = sys_page_alloc(0, addr, PTE_P | PTE_U | PTE_W);
    if(r != 0)
-       panic("bc.c: paga_alloc failed %p", r);
+       panic("bc.c: paga_alloc failed %i", r);
    r = ide_read(blockno * BLKSECTS, addr, BLKSECTS);
    if(r != 0)
-       panic("bc.c: ide_read failed %p", r);
+       panic("bc.c: ide_read failed %i", r);
 
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
@@ -93,10 +93,10 @@ flush_block(void *addr)
 	 if(va_is_mapped(addr) && va_is_dirty(addr)){
 			 r = ide_write(blockno * BLKSECTS, addr, BLKSECTS);
 			 if(r != 0)
-					 panic("flush_block: ide_write failed %e", r);
+					 panic("flush_block: ide_write failed %i", r);
 			 r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL);
 			 if(r != 0)
-					 panic("flush_block: sys_page_map failed %e", r);
+					 panic("flush_block: sys_page_map failed %i", r);
 	 }
 }
 
