@@ -62,9 +62,8 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
-	int r;
 	// LAB 11
-	pte_t pte = vpt[pn];
+	pte_t pte = uvpt[pn];
 	void *va = (void *)(pn << PGSHIFT);
 
 	// If the page is writable or copy-on-write,
@@ -92,7 +91,7 @@ duppage(envid_t envid, unsigned pn)
 													va,
 													PTE_U | PTE_P))
 			panic("duppage: map ro error");
-
+	return 0;
 }
 //
 // User-level fork with copy-on-write.
