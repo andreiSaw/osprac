@@ -24,12 +24,11 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 9: Your code here.
-	// uvpt - va of vitrual page table
-
-	pte_t pte = uvpt[PGNUM(addr)];
-	if (!(err & FEC_WR) ||	// FEC_WR - pgfault caused by a write
-		!(pte & PTE_COW)) { 	// check if access not write
-		panic("pgfault: faulting access panic");			
+	if (!((err & FEC_WR) &&
+		(uvpd[PDX(addr)] & PTE_P) &&
+		(uvpt[PGNUM(addr)] & PTE_P) &&
+		(uvpt[PGNUM(addr)] & PTE_COW))) {
+		panic("pgfault faulting access panic");
 	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
@@ -42,10 +41,10 @@ pgfault(struct UTrapframe *utf)
 	// LAB 9: Your code here.
 	addr = ROUNDDOWN(addr, PGSIZE);
 	sys_page_alloc(0, PFTEMP, PTE_W | PTE_P | PTE_U);
-	memcpy(PFTEMP, addr, PGSIZE); // copy from old addr to temp location
-	
-	int perm = (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W; // set permission without copy-on-write
-	sys_page_map(0, PFTEMP, 0, addr, perm); // map temp to old
+	memcpy(PFTEMP, addr, PGSIZE);
+
+	int perm = (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W;
+	sys_page_map(0, PFTEMP, 0, addr, perm);
 	sys_page_unmap(0, PFTEMP);
 }
 
@@ -65,25 +64,25 @@ duppage(envid_t envid, unsigned pn)
 {
 	// LAB 9: Your code here.
 	void *addr = (void *)(pn * PGSIZE);
-	pte_t pte = uvpt[pn];
-
-	if ((pte & PTE_W) || (pte & PTE_COW)) { 
-		// if the page is writable or copy-on-write
-		int perm = PTE_COW | PTE_U | PTE_P;
-		if ((sys_page_map(0, addr, envid, addr, perm) < 0) || 	// mark new mapping as copy-on-write
-			(sys_page_map(0, addr, 0, addr, perm) < 0)) { 		// mark old mapping as copy-on-write, otherwise new env would see the change in this env
-			panic("duppage : w | cow mapping failed");		
+	if ((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) {
+		int perm = ((uvpt[pn] & PTE_SYSCALL) & (~PTE_W)) | PTE_COW;
+		if ((sys_page_map(0, addr, envid, addr, perm) < 0) || (sys_page_map(0, addr, 0, addr, perm) < 0)) {
+			panic("duppage : w | cow mapping failed");
 		}
 	} else {
-		int perm = PTE_U | PTE_P;
-		if (sys_page_map(0, addr, envid, addr, perm) < 0) {
-			panic("duppage : readonly mapping failed");
+		int perm = uvpt[pn] & PTE_SYSCALL;
+		if ((r = sys_page_map(0, addr, envid, addr, perm) < 0)) {
+			panic("duppage : readonly mapping failed %i",r);
 		}
-	}	
-	
+	}
+	int r;
+	if(uvpt[pn] & PTE_SHARE){
+		if ((r = sys_page_map(0, addr, envid, addr, uvpt[pn] & PTE_SYSCALL)) < 0)
+	  	return r;
+	  return 0;
+	   }
 	return 0;
 }
-
 //
 // User-level fork with copy-on-write.
 // Set up our page fault handler appropriately.
@@ -115,18 +114,10 @@ fork(void)
 		return 0;
 	}
 
-
-	// uvpd - va of current page directory
-	// uvpt - va of vitrual page table
-	// PDX - index of page directory
-	// PGNUM - index of page in page table
-
 	int i;
 	for (i = 0; i < USTACKTOP; i += PGSIZE) {
-		if ((uvpd[PDX(i)] & PTE_P) && 
-			(uvpt[PGNUM(i)] & PTE_P) && 
-			(uvpt[PGNUM(i)] & PTE_U)) {
-			duppage(env_id, PGNUM(i));		
+		if ((uvpd[PDX(i)] & PTE_P) && (uvpt[PGNUM(i)] & PTE_P) && (uvpt[PGNUM(i)] & PTE_U)) {
+			duppage(env_id, PGNUM(i));
 		}
 	}
 	sys_page_alloc(env_id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
