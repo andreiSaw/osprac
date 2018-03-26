@@ -93,7 +93,7 @@ flush_block(void *addr)
 		if ((r = ide_write(blockno * BLKSECTS, page_addr, BLKSECTS))) {
 			panic("in flush_block, ide_write: %i", r);
 		}
-		if (r = sys_page_map(envid, addr, envid, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL) < 0) {
+		if ((r = sys_page_map(envid, addr, envid, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0) {
 			panic("in flush_block, sys_page_map: %i", r);
 		}
 	}
