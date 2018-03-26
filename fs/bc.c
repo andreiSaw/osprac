@@ -52,7 +52,7 @@ bc_pgfault(struct UTrapframe *utf)
 	// LAB 10: you code here:
 	void *page_addr = ROUNDDOWN(addr, PGSIZE);
 
-	if ((r = sys_page_alloc(thisenv->env_id, page_addr, (PTE_U|PTE_P|PTE_W))) != 0) {
+	if ((r = sys_page_alloc(thisenv->env_id, page_addr, (PTE_U|PTE_P|PTE_W)))) {
 		panic("in bc_pgfault, sys_page_alloc failed: %i", r);
 	}
 	if ((r = ide_read(blockno * BLKSECTS, page_addr, BLKSECTS))) {
@@ -61,7 +61,7 @@ bc_pgfault(struct UTrapframe *utf)
 
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
-	if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
+	if ((r = sys_page_map(0, page_addr, 0, page_addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
 		panic("in bc_pgfault, sys_page_map: %i", r);
 
 	// Check that the block we read was allocated. (exercise for
