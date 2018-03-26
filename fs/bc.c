@@ -85,13 +85,15 @@ flush_block(void *addr)
 		panic("flush_block of bad va %p", addr);
 
 	// LAB 10: Your code here.
+	envid_t envid = thisenv->env_id;
+
 	int r;
 	if (va_is_mapped(addr) && va_is_dirty(addr)) {
 		void *page_addr = ROUNDDOWN(addr, PGSIZE);
 		if ((r = ide_write(blockno * BLKSECTS, page_addr, BLKSECTS))) {
 			panic("in flush_block, ide_write: %i", r);
 		}
-		if (r = sys_page_map(envid, addr, envid, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0) {
+		if (r = sys_page_map(envid, addr, envid, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL) < 0) {
 			panic("in flush_block, sys_page_map: %i", r);
 		}
 	}
