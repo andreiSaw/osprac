@@ -56,14 +56,13 @@ again:
 
 			// LAB 11: Your code here.
 			if ((fd = open(t, O_RDONLY)) < 0) {
-				cprintf("open %s for read: %i", t, fd);
-				exit();
-			}
-			if (fd != 0) {
-				dup(fd, 0);
-				close(fd);
-			}
-			//panic("< redirection not implemented");
+           		cprintf("open %s for read: %i", t, fd);
+           		exit();
+       		}
+       		if (fd != 0) {
+           		dup(fd, 0);
+           		close(fd);
+       		}
 			break;
 
 		case '>':	// Output redirection
@@ -327,3 +326,4 @@ umain(int argc, char **argv)
 			wait(r);
 	}
 }
+

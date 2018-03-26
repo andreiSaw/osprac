@@ -24,14 +24,12 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 9: Your code here.
-	// uvpt - va of vitrual page table
-
-	pte_t pte = uvpt[PGNUM(addr)];
-	if (!(err & FEC_WR) ||	// FEC_WR - pgfault caused by a write
-		!(pte & PTE_COW)) { 	// check if access not write
-		panic("pgfault: faulting access panic");
+	if (!((err & FEC_WR) &&     // check that the faulting access was a write
+		(uvpd[PDX(addr)] & PTE_P) && (uvpt[PGNUM(addr)] & PTE_P) &&
+		(uvpt[PGNUM(addr)] & PTE_COW))) {   // check that write was to a COW page
+		panic("pgfault faulting access panic");
 	}
-
+	
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
 	// page to the old page's address.
@@ -42,11 +40,10 @@ pgfault(struct UTrapframe *utf)
 	// LAB 9: Your code here.
 	addr = ROUNDDOWN(addr, PGSIZE);
 	sys_page_alloc(0, PFTEMP, PTE_W | PTE_P | PTE_U);
-	memcpy(PFTEMP, addr, PGSIZE); // copy from old addr to temp location
-
-	int perm = (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W; // set permission without copy-on-write
-	sys_page_map(0, PFTEMP, 0, addr, perm); // map temp to old
+	memcpy(PFTEMP, addr, PGSIZE);
+	sys_page_map(0, PFTEMP,	0, addr, (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W);
 	sys_page_unmap(0, PFTEMP);
+	//panic("pgfault not implemented");
 }
 
 //
@@ -64,23 +61,18 @@ static int
 duppage(envid_t envid, unsigned pn)
 {
 	// LAB 9: Your code here.
-	void *addr = (void *)(pn * PGSIZE);
-	pte_t pte = uvpt[pn];
-
-	if (((pte & PTE_W) || (pte & PTE_COW)) && !(pte & PTE_SHARE)) {
-		// if the page is writable or copy-on-write
-		int perm = PTE_COW | PTE_U | PTE_P;
-		if ((sys_page_map(0, addr, envid, addr, perm) < 0) || 	// mark new mapping as copy-on-write
-			(sys_page_map(0, addr, 0, addr, perm) < 0)) { 		// mark old mapping as copy-on-write, otherwise new env would see the change in this env
-			panic("duppage : w | cow mapping failed");
+	//panic("duppage not implemented");
+	void *addr = (void *)(pn * PGSIZE);	
+	if (((uvpt[pn] & PTE_W) || (uvpt[pn] & PTE_COW)) && !(uvpt[pn] & PTE_SHARE)) {
+		int perm = ((uvpt[pn] & PTE_SYSCALL) & (~PTE_W)) | PTE_COW;
+		if ((sys_page_map(0, addr, envid, addr, perm) < 0) ||
+	  		(sys_page_map(0, addr, 0, addr, perm) < 0)) {
+			panic("duppage: (w | cow) mapping failed!");
 		}
 	} else {
-		int perm = PTE_U | PTE_P;
-		if (sys_page_map(0, addr, envid, addr, perm) < 0) {
-			panic("duppage : readonly mapping failed");
-		}
+		if (sys_page_map(0, addr, envid, addr, (uvpt[pn] & PTE_SYSCALL)) < 0)
+			panic("duppage: (r-only) mapping failed");
 	}
-
 	return 0;
 }
 
@@ -104,38 +96,37 @@ envid_t
 fork(void)
 {
 	// LAB 9: Your code here.
+	// set up page fault handler
 	set_pgfault_handler(pgfault);
-
-	envid_t env_id = sys_exofork();
-	if (env_id < 0) {
+	
+	// create a child
+	envid_t id = sys_exofork();
+	if (id < 0) {
 		panic("fork panic");
 	}
-	if (env_id == 0) {
-		thisenv = &envs[ENVX(sys_getenvid())]; // fix "thisenv"
+	if (id == 0) {
+		thisenv = &envs[ENVX(sys_getenvid())]; // fixing "thisenv"
 		return 0;
 	}
-
-
-	// uvpd - va of current page directory
-	// uvpt - va of vitrual page table
-	// PDX - index of page directory
-	// PGNUM - index of page in page table
-
+	
+	// copy address space and page fault handler setup to the child
 	int i;
 	for (i = 0; i < USTACKTOP; i += PGSIZE) {
-		if ((uvpd[PDX(i)] & PTE_P) &&
-			(uvpt[PGNUM(i)] & PTE_P) &&
+		if ((uvpd[PDX(i)] & PTE_P) && // check if present
+			(uvpt[PGNUM(i)] & PTE_P) && // check if present
 			(uvpt[PGNUM(i)] & PTE_U)) {
-			duppage(env_id, PGNUM(i));
+			duppage(id, PGNUM(i));
 		}
 	}
-	sys_page_alloc(env_id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
-
-	sys_env_set_status(env_id, ENV_RUNNABLE);
-
+	sys_page_alloc(id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
+	
+	// mark the child as runnable
+	sys_env_set_status(id, ENV_RUNNABLE);
+	
 	extern void _pgfault_upcall();
-	sys_env_set_pgfault_upcall(env_id, _pgfault_upcall);
-	return env_id;
+	sys_env_set_pgfault_upcall(id, _pgfault_upcall);	
+	return id;
+	//panic("fork not implemented");
 }
 
 // Challenge!
