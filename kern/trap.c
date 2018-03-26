@@ -226,7 +226,6 @@ trap_dispatch(struct Trapframe *tf)
 	}
 
 	// lab 8
-
 	if (tf->tf_trapno == T_BRKPT) {
 		return monitor(tf);
 	}
@@ -240,27 +239,29 @@ trap_dispatch(struct Trapframe *tf)
 		regs->reg_eax = syscall(regs->reg_eax, regs->reg_edx, regs->reg_ecx, regs->reg_ebx, regs->reg_edi, regs->reg_esi);
 		return;
 	}
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_KBD) {
+   		kbd_intr();
+   		return;
+ 	}
 
-	// end of lab 8
+ 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SERIAL) {
+   		serial_intr();
+   		return;
+ 	}
+	// end of my code
+
 
 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_CLOCK) {
-		pic_send_eoi(IRQ_CLOCK + rtc_check_status());
+		// my code
+		uint8_t status = rtc_check_status();
+		pic_send_eoi(status);
+		// end of my code
 		sched_yield();
 		return;
 	}
 
 	// Handle keyboard and serial interrupts.
 	// LAB 11: Your code here.
-	if (tf->tf_trapno == IRQ_OFFSET + IRQ_KBD) {
-		kbd_intr();
-		return;
-	}
-
-	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SERIAL) {
-		serial_intr();
-		return;
-	}
-
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT) {
 		panic("unhandled trap in kernel");
