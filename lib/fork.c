@@ -67,7 +67,7 @@ duppage(envid_t envid, unsigned pn)
 	void *addr = (void *)(pn * PGSIZE);
 	pte_t pte = uvpt[pn];
 
-	if ((pte & PTE_W) || (pte & PTE_COW) !(pte & PTE_SHARE)) {
+	if (((pte & PTE_W) || (pte & PTE_COW)) && !(pte & PTE_SHARE)) {
 		// if the page is writable or copy-on-write
 		int perm = PTE_COW | PTE_U | PTE_P;
 		if ((sys_page_map(0, addr, envid, addr, perm) < 0) || 	// mark new mapping as copy-on-write
