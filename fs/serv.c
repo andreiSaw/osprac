@@ -223,18 +223,15 @@ serve_read(envid_t envid, union Fsipc *ipc)
 	if (open_file->o_fd->fd_offset == open_file->o_file->f_size) {
 		return -E_INVAL;
 	}
-	
+
 	struct File *f = open_file->o_file;
 	struct Fd *fd = open_file->o_fd;
 
-	if ((r = file_read(f, ret->ret_buf, req->req_n, fd->fd_offset))) {
-		if (r > 0) {
-			fd->fd_offset += r;
-		}
+	r = file_read(f, ret->ret_buf, req->req_n, fd->fd_offset);
+	if(r < 0)
 		return r;
-	}
-
-	return 0;
+	fd->fd_offset += r;
+	return r;
 }
 
 
@@ -375,4 +372,3 @@ umain(int argc, char **argv)
         fs_test();
 	serve();
 }
-

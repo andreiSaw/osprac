@@ -29,7 +29,7 @@ pgfault(struct UTrapframe *utf)
 	pte_t pte = uvpt[PGNUM(addr)];
 	if (!(err & FEC_WR) ||	// FEC_WR - pgfault caused by a write
 		!(pte & PTE_COW)) { 	// check if access not write
-		panic("pgfault: faulting access panic");			
+		panic("pgfault: faulting access panic");
 	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
@@ -43,7 +43,7 @@ pgfault(struct UTrapframe *utf)
 	addr = ROUNDDOWN(addr, PGSIZE);
 	sys_page_alloc(0, PFTEMP, PTE_W | PTE_P | PTE_U);
 	memcpy(PFTEMP, addr, PGSIZE); // copy from old addr to temp location
-	
+
 	int perm = (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W; // set permission without copy-on-write
 	sys_page_map(0, PFTEMP, 0, addr, perm); // map temp to old
 	sys_page_unmap(0, PFTEMP);
@@ -67,20 +67,20 @@ duppage(envid_t envid, unsigned pn)
 	void *addr = (void *)(pn * PGSIZE);
 	pte_t pte = uvpt[pn];
 
-	if ((pte & PTE_W) || (pte & PTE_COW)) { 
+	if ((pte & PTE_W) || (pte & PTE_COW) !(pte & PTE_SHARE)) {
 		// if the page is writable or copy-on-write
 		int perm = PTE_COW | PTE_U | PTE_P;
 		if ((sys_page_map(0, addr, envid, addr, perm) < 0) || 	// mark new mapping as copy-on-write
 			(sys_page_map(0, addr, 0, addr, perm) < 0)) { 		// mark old mapping as copy-on-write, otherwise new env would see the change in this env
-			panic("duppage : w | cow mapping failed");		
+			panic("duppage : w | cow mapping failed");
 		}
 	} else {
 		int perm = PTE_U | PTE_P;
 		if (sys_page_map(0, addr, envid, addr, perm) < 0) {
 			panic("duppage : readonly mapping failed");
 		}
-	}	
-	
+	}
+
 	return 0;
 }
 
@@ -123,10 +123,10 @@ fork(void)
 
 	int i;
 	for (i = 0; i < USTACKTOP; i += PGSIZE) {
-		if ((uvpd[PDX(i)] & PTE_P) && 
-			(uvpt[PGNUM(i)] & PTE_P) && 
+		if ((uvpd[PDX(i)] & PTE_P) &&
+			(uvpt[PGNUM(i)] & PTE_P) &&
 			(uvpt[PGNUM(i)] & PTE_U)) {
-			duppage(env_id, PGNUM(i));		
+			duppage(env_id, PGNUM(i));
 		}
 	}
 	sys_page_alloc(env_id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);

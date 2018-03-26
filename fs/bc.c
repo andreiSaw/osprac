@@ -49,7 +49,8 @@ bc_pgfault(struct UTrapframe *utf)
 	//
 	// LAB 10: you code here:
 	void *page_addr = ROUNDDOWN(addr, PGSIZE);
-	if ((r = sys_page_alloc(0, page_addr, (PTE_U|PTE_P|PTE_W)))) {
+
+	if ((r = sys_page_alloc(thisenv->env_id, addr, (PTE_U|PTE_P|PTE_W)))) {
 		panic("in bc_pgfault, sys_page_alloc failed: %i", r);
 	}
 	if ((r = ide_read(blockno * BLKSECTS, page_addr, BLKSECTS))) {
@@ -90,7 +91,7 @@ flush_block(void *addr)
 		if ((r = ide_write(blockno * BLKSECTS, page_addr, BLKSECTS))) {
 			panic("in flush_block, ide_write: %i", r);
 		}
-		if ((r = sys_page_map(0, page_addr, 0, page_addr, uvpt[PGNUM(page_addr)] & PTE_SYSCALL)) < 0) {
+		if (r = sys_page_map(envid, addr, envid, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0) {
 			panic("in flush_block, sys_page_map: %i", r);
 		}
 	}
@@ -136,4 +137,3 @@ bc_init(void)
 	// cache the super block by reading it once
 	memmove(&super, diskaddr(1), sizeof super);
 }
-

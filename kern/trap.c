@@ -128,7 +128,7 @@ trap_init(void)
 	SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, irq_ide_thdlr, 0);
 	SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, irq_error_thdlr, 0);
 
-	// Per-CPU setup 
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -234,7 +234,7 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_trapno == T_PGFLT) {
 		return page_fault_handler(tf);
 	}
-	
+
 	if (tf->tf_trapno == T_SYSCALL) {
 		struct PushRegs *regs = &(tf->tf_regs);
 		regs->reg_eax = syscall(regs->reg_eax, regs->reg_edx, regs->reg_ecx, regs->reg_ebx, regs->reg_edi, regs->reg_esi);
@@ -251,6 +251,15 @@ trap_dispatch(struct Trapframe *tf)
 
 	// Handle keyboard and serial interrupts.
 	// LAB 11: Your code here.
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_KBD) {
+		kbd_intr();
+		return;
+	}
+
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SERIAL) {
+		serial_intr();
+		return;
+	}
 
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT) {
@@ -325,9 +334,9 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 8: Your code here.
-	
+
 	if ((tf->tf_cs & 3) == 0) {
-		panic("page fault in kernel mode");	
+		panic("page fault in kernel mode");
 	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
@@ -362,11 +371,11 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 9: Your code here.
-	
+
 	if (curenv->env_pgfault_upcall) {
 		uintptr_t utf_addr;
 		if (tf->tf_esp + PGSIZE >= UXSTACKTOP &&  tf->tf_esp <= UXSTACKTOP - 1)	{
-			utf_addr = tf->tf_esp - 4;		
+			utf_addr = tf->tf_esp - 4;
 		} else {
 			utf_addr = UXSTACKTOP;
 		}
@@ -381,7 +390,7 @@ page_fault_handler(struct Trapframe *tf)
 		utf->utf_eflags = tf->tf_eflags;
 		utf->utf_esp = tf->tf_esp;
 
-		// set start pgfault handler 
+		// set start pgfault handler
 		tf->tf_esp = utf_addr;
 		tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
 		env_run(curenv);
@@ -393,4 +402,3 @@ page_fault_handler(struct Trapframe *tf)
 	print_trapframe(tf);
 	env_destroy(curenv);
 }
-
