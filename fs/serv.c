@@ -214,23 +214,14 @@ serve_read(envid_t envid, union Fsipc *ipc)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// Lab 10: Your code here:
-
+	struct OpenFile *o;
 	int r;
-	struct OpenFile * open_file;
-	if ((r = openfile_lookup(envid, req->req_fileid, &open_file)) < 0) {
+	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)
 		return r;
-	}
-	if (open_file->o_fd->fd_offset == open_file->o_file->f_size) {
-		return -E_INVAL;
-	}
-
-	struct File *f = open_file->o_file;
-	struct Fd *fd = open_file->o_fd;
-
-	r = file_read(f, ret->ret_buf, req->req_n, fd->fd_offset);
+	r = file_read(o->o_file, ret->ret_buf, req->req_n, o->o_fd->fd_offset);
 	if(r < 0)
 		return r;
-	fd->fd_offset += r;
+	o->o_fd->fd_offset += r;
 	return r;
 }
 
@@ -246,19 +237,27 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 10: Your code here.
-	int r;
-	struct OpenFile * open_file;
-	if ((r = openfile_lookup(envid, req->req_fileid, &open_file)) < 0) {
-		return r;
-	}
-	if ((r = file_write(open_file->o_file, req->req_buf, req->req_n, open_file->o_fd->fd_offset))) {
-		if (r > 0) {
-			open_file->o_fd->fd_offset += r;
-		}
+	struct OpenFile *o;
+	int r = openfile_lookup(envid, req->req_fileid, &o);
+	if (r != 0) {
+		cprintf("serve_write: lookup error (code %d)\n", r);
 		return r;
 	}
 
-	return -E_INVAL;
+	struct File *f = o->o_file;
+	struct Fd *fd = o->o_fd;
+	size_t wrsz = req->req_n < PGSIZE ? req->req_n : PGSIZE;
+	if (fd->fd_offset + wrsz > f->f_size) {
+		f->f_size = fd->fd_offset + wrsz;
+	}
+	ssize_t wrnsz = file_write(f, req->req_buf, wrsz, fd->fd_offset);
+	if (wrnsz < 0) {
+		cprintf("serve_write: file write error (code %d)\n", wrnsz);
+		return wrnsz;
+	}
+
+	fd->fd_offset += wrnsz;
+	return wrnsz;
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the
@@ -372,3 +371,4 @@ umain(int argc, char **argv)
         fs_test();
 	serve();
 }
+

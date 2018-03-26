@@ -46,8 +46,6 @@ free_block(uint32_t blockno)
 	bitmap[blockno/32] |= 1<<(blockno%32);
 }
 
-// LAB 10
-// Mark a block unfree in the bitmap
 void
 unfree_block(uint32_t blockno)
 {
@@ -73,7 +71,6 @@ alloc_block(void)
 	// super->s_nblocks blocks in the disk altogether.
 
 	// LAB 10: Your code here.
-	
 	uint32_t blockno = 0;
 	for (blockno = 0; blockno != super->s_nblocks * BLKBITSIZE; ++blockno) {
 		if (block_is_free(blockno)) {
@@ -154,30 +151,37 @@ fs_init(void)
 static int
 file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool alloc)
 {
-	// LAB 10: Your code here.
-	if (filebno <= NDIRECT) {
-		// block can be found directly
+       // LAB 10: Your code here.
+    if (filebno >= NDIRECT + NINDIRECT) {
+		cprintf("file_block_walk: invalid block number (filebno = %d)\n", filebno);
+		return -E_INVAL;
+	}
+
+	if (filebno < NDIRECT) {
 		*ppdiskbno = &f->f_direct[filebno];
-		return 0;
-	} else if (filebno <= NDIRECT + NINDIRECT) {
-		// block must be found indirectly		
+	}
+
+	if (NDIRECT <= filebno && filebno < NDIRECT + NINDIRECT) {
 		if (!f->f_indirect) {
 			if (!alloc) {
 				return -E_NOT_FOUND;
 			}
-			// allocate indirect block
-			if ((f->f_indirect = alloc_block())) {
+
+			int r = alloc_block();
+			if (!r) {
+				cprintf("file_block_walk: file block allocation error (code %d)\n", r);
 				return -E_NO_DISK;
 			}
-			// clear block
+
+			f->f_indirect = r;
 			memset(diskaddr(f->f_indirect), 0, BLKSIZE);
 		}
-		uint32_t *indir_block_addr = (uint32_t *)diskaddr(f->f_indirect);
-		*ppdiskbno = &indir_block_addr[filebno - NDIRECT];
-		return 0;
-	} else {
-		return -E_INVAL;
+
+		uint32_t *addr = (uint32_t *) diskaddr(f->f_indirect);
+		*ppdiskbno = &addr[filebno - NDIRECT];
 	}
+
+	return 0;
 }
 
 // Set *blk to the address in memory where the filebno'th
@@ -192,21 +196,23 @@ int
 file_get_block(struct File *f, uint32_t filebno, char **blk)
 {
        // LAB 10: Your code here.
-	uint32_t * ppdiskbno;
-	int r = file_block_walk(f, filebno, &ppdiskbno, true);
-	if (r) {
+    uint32_t *blkno;
+	int r = file_block_walk(f, filebno, &blkno, true);
+	if (r != 0) {
+		cprintf("file_get_block: file block not found (code %d)\n", r);
 		return r;
 	}
-	// if not exists yet
-	if (!*ppdiskbno) {
-		*ppdiskbno = alloc_block();
-	}
-	// if allocation failed	
-	if (!*ppdiskbno) {
-		return -E_NO_DISK;
+
+	if (!(*blkno)) {
+		uint32_t r = alloc_block();
+		if (r < 0) {
+			cprintf("file_get_block: file block allocation error (code %d)\n", r);
+			return -E_NO_DISK;
+		}
+		*blkno = r;
 	}
 
-	*blk = (char *)diskaddr(*ppdiskbno);
+	*blk = (char *) diskaddr(*blkno);
 	return 0;
 }
 
