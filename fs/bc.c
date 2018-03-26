@@ -31,6 +31,8 @@ bc_pgfault(struct UTrapframe *utf)
 {
 	void *addr = (void *) utf->utf_fault_va;
 	uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
+	//void *blkaddr = ROUNDDOWN(addr, PGSIZE);
+
 	int r;
 
 	// Check that the fault was within the block cache region
@@ -50,7 +52,7 @@ bc_pgfault(struct UTrapframe *utf)
 	// LAB 10: you code here:
 	void *page_addr = ROUNDDOWN(addr, PGSIZE);
 
-	if ((r = sys_page_alloc(thisenv->env_id, addr, (PTE_U|PTE_P|PTE_W)))) {
+	if ((r = sys_page_alloc(thisenv->env_id, page_addr, (PTE_U|PTE_P|PTE_W))) != 0) {
 		panic("in bc_pgfault, sys_page_alloc failed: %i", r);
 	}
 	if ((r = ide_read(blockno * BLKSECTS, page_addr, BLKSECTS))) {
