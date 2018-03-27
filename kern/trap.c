@@ -128,7 +128,7 @@ trap_init(void)
 
 	// end of my code
 
-	// Per-CPU setup 
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -224,7 +224,7 @@ trap_dispatch(struct Trapframe *tf)
 		print_trapframe(tf);
 		return;
 	}
-	
+
 	// my code
 	if (tf->tf_trapno == T_BRKPT) {
 		return monitor(tf);
@@ -233,7 +233,7 @@ trap_dispatch(struct Trapframe *tf)
 	if (tf->tf_trapno == T_PGFLT) {
 		return page_fault_handler(tf);
 	}
-	
+
 	if (tf->tf_trapno == T_SYSCALL) {
 		struct PushRegs *regs = &(tf->tf_regs);
 		regs->reg_eax = syscall(regs->reg_eax, regs->reg_edx, regs->reg_ecx, regs->reg_ebx, regs->reg_edi, regs->reg_esi);
@@ -248,14 +248,15 @@ trap_dispatch(struct Trapframe *tf)
    		serial_intr();
    		return;
  	}
-	// end of my code		
-		
+	// end of my code
+
 
 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_CLOCK) {
 		// my code
 		uint8_t status = rtc_check_status();
 		pic_send_eoi(status);
-		// end of my code		
+		vsys[VSYS_gettime] = gettime();
+		// end of my code
 		sched_yield();
 		return;
 	}
@@ -299,10 +300,10 @@ trap(struct Trapframe *tf)
 	if (curenv->env_status == ENV_DYING) {
 		env_free(curenv);
 		curenv = NULL;
-		// my code		
+		// my code
 		//uint8_t status = rtc_check_status();
 		//pic_send_eoi(status);
-		// end of my code		
+		// end of my code
 		sched_yield();
 	}
 
@@ -316,7 +317,7 @@ trap(struct Trapframe *tf)
 	// Record that tf is the last real trapframe so
 	// print_trapframe can print some additional information.
 	last_tf = tf;
-	
+
 	// my code
 	//uint8_t status = rtc_check_status();
 	//pic_send_eoi(status);
@@ -347,7 +348,7 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 8: Your code here.
-	// my code	
+	// my code
 	if ((tf->tf_cs & 3) == 0) {
 		panic("page fault in kernel mode\n");
 	}
@@ -395,7 +396,7 @@ page_fault_handler(struct Trapframe *tf)
 		utf_addr -= (sizeof(struct UTrapframe));
 		struct UTrapframe *utf = (struct UTrapframe *)utf_addr;
 		user_mem_assert(curenv, utf, (sizeof(struct UTrapframe)), PTE_U | PTE_W);
-		
+
 		utf->utf_fault_va = fault_va;
 		utf->utf_err = tf->tf_err;
 		utf->utf_regs = tf->tf_regs;
@@ -415,4 +416,3 @@ page_fault_handler(struct Trapframe *tf)
 	print_trapframe(tf);
 	env_destroy(curenv);
 }
-
