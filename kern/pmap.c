@@ -170,9 +170,6 @@ mem_init(void)
 	page_init();
 
 	check_page_free_list(1);
-	// my code
-	//cprintf("check_page_alloc() succeeded!\n");
-	// end of my code
 	check_page_alloc();
 	check_page();
 
@@ -206,8 +203,7 @@ mem_init(void)
 	//    - the new image at UVSYS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 12: Your code here.
-	boot_map_region(kern_pgdir, UVSYS, PTSIZE, PADDR(vsys), PTE_U);
-	//boot_map_region(kern_pgdir, (physaddr_t)vsys, PTSIZE, PADDR(vsys), PTE_W);
+	// m d
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -231,6 +227,9 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
 	boot_map_region(kern_pgdir, KERNBASE, (1ULL << 32) -KERNBASE, 0, PTE_W);
+
+	boot_map_region(kern_pgdir, UVSYS, PTSIZE, PADDR(vsys), PTE_U);
+	boot_map_region(kern_pgdir, (physaddr_t)vsys, PTSIZE, PADDR(vsys), PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -401,12 +400,10 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	// relevant page table does not exist
 	pde_t *pgdir_entry = &pgdir[PDX(va)]; // locate the page directory entry
 	if (*pgdir_entry) {
 		// physical address of p
 		return (pte_t *) KADDR(PTE_ADDR(*pgdir_entry)) + PTX(va);
-		//return (pte_t *) *pgdir_entry + PTX(va);
 	} else if (create) { // the relevant page table page does not exist yet
 		struct PageInfo *page = page_alloc(1);
 		if (page) {

@@ -1,8 +1,18 @@
 /* See COPYRIGHT for copyright information. */
 
 #include <inc/x86.h>
+#include <inc/time.h>
 #include <kern/kclock.h>
 #include <inc/time.h>
+
+bool equal(struct tm a1, struct tm a2)
+{
+	if(a1.tm_sec == a2.tm_sec && a1.tm_min == a2.tm_min &&
+	a1.tm_hour == a2.tm_hour && a1.tm_mday == a2.tm_mday &&
+	a1.tm_mon == a2.tm_mon && a1.tm_year == a2.tm_year)
+		return true;
+	else return false;
+}
 
 bool equal(struct tm a1, struct tm a2)
 {

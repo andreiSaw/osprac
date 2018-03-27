@@ -97,7 +97,6 @@ sys_exofork(void)
 	env->env_tf.tf_regs.reg_eax = 0; // tweak env so sys_exofork will return 0
 	env->env_status = ENV_NOT_RUNNABLE;
 	return env->env_id;
-	//panic("sys_exofork not implemented");
 }
 
 // Set envid's env_status to status, which must be ENV_RUNNABLE
@@ -128,7 +127,6 @@ sys_env_set_status(envid_t envid, int status)
 	}
 	env->env_status = status;
 	return 0;
-	//panic("sys_env_set_status not implemented");
 }
 
 // Set envid's trap frame to 'tf'.
@@ -225,7 +223,6 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	if (!page) {
 		return -E_NO_MEM;
 	}
-	//page->pp_ref++;
 	int result = page_insert(env->env_pgdir, page, va, perm);
 	if (result) {
 		// page insert failed
@@ -233,7 +230,6 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		page_free(page);
 	}
 	return result;
-	//panic("sys_page_alloc not implemented");
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space
