@@ -7,7 +7,7 @@ vsyscall(int num)
 	// LAB 12: Your code here.
 	if ((num > 0)  && (num < NVSYSCALLS))
 		return vsys[num];
-	cprintf("0 < num<NVSYSCALLS!");
+	cprintf("0 < num < NVSYSCALLS!");
 	return 0;
 }
 
