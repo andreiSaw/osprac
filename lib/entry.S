@@ -5,12 +5,14 @@
 // Define the global symbols 'envs', 'pages', 'vsys', 'uvpt', and 'uvpd'
 // so that they can be used in C as if they were ordinary global arrays.
 // LAB 12: Your code here.
+	.globl vsys
+	.set vsys, UVSYS
 	.globl envs
 	.set envs, UENVS
 	.globl pages
 	.set pages, UPAGES
 	.globl vsys
-	.set vsys, UVSYS
+	.set vsys, 0
 	.globl uvpt
 	.set uvpt, UVPT
 	.globl uvpd

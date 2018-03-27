@@ -292,22 +292,6 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 
-	//size_t i;
-	//for (i = 0; i < npages; i++) {
-	//	pages[i].pp_ref = 0;
-	//	pages[i].pp_link = page_free_list;
-	//	page_free_list = &pages[i];
-	//}
-
-	//size_t i;
-	//pages[npages - 1].pp_ref = 0;
-	//pages[npages - 1].pp_link = NULL;
-	//for (i = npages - 2; i >= 0; i--) {
-	//	pages[i].pp_ref = 0;
-	//	pages[i].pp_link = &pages[i + 1];
-	//}
-	//page_free_list = &pages[0];
-
 	size_t nf = PADDR(boot_alloc(0)) / PGSIZE; // get the number of the next free page
 	size_t i;
 	for (i = 0; i < npages; i++) {
@@ -360,7 +344,6 @@ page_alloc(int alloc_flags)
 		return NULL; // out of free memory
 	}
 	return free_page;
-	//return 0;
 }
 
 //
@@ -418,13 +401,7 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-
 	// relevant page table does not exist
-	//if (create == false) {
-	//	return NULL;
-	//} else {
-		//page_alloc();
-	//}
 	pde_t *pgdir_entry = &pgdir[PDX(va)]; // locate the page directory entry
 	if (*pgdir_entry) {
 		// physical address of p
@@ -441,7 +418,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 			*pgdir_entry |= PTE_W;
 			*pgdir_entry |= PTE_U;
 			return (pte_t *) KADDR(PTE_ADDR(*pgdir_entry)) + PTX(va);
-			//return (pte_t *) *pgdir_entry + PTX(va);
 		}
 	}
 	return NULL;
@@ -514,7 +490,6 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	} else {
 		return -E_NO_MEM;
 	}
-	//return 0;
 }
 
 //
