@@ -338,7 +338,6 @@ page_alloc(int alloc_flags)
 		return NULL; // out of free memory
 	}
 	return free_page;
-	//return 0;
 }
 
 //
@@ -407,7 +406,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	if (*pgdir_entry) {
 		// physical address of p
 		return (pte_t *) KADDR(PTE_ADDR(*pgdir_entry)) + PTX(va);
-		//return (pte_t *) *pgdir_entry + PTX(va);
 	} else if (create) { // the relevant page table page does not exist yet
 		struct PageInfo *page = page_alloc(1);
 		if (page) {
@@ -419,7 +417,6 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 			*pgdir_entry |= PTE_W;
 			*pgdir_entry |= PTE_U;
 			return (pte_t *) KADDR(PTE_ADDR(*pgdir_entry)) + PTX(va);
-			//return (pte_t *) *pgdir_entry + PTX(va);
 		}
 	}
 	return NULL;
@@ -492,7 +489,6 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	} else {
 		return -E_NO_MEM;
 	}
-	//return 0;
 }
 
 //
