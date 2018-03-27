@@ -1,8 +1,8 @@
 /* See COPYRIGHT for copyright information. */
 
 #include <inc/x86.h>
-#include <kern/kclock.h>
 #include <inc/time.h>
+#include <kern/kclock.h>
 
 bool equal(struct tm a1, struct tm a2)
 {
@@ -62,7 +62,7 @@ rtc_init(void)
 	uint8_t reg_a = inb(0x71); // read reg a
 	outb(0x70, RTC_AREG); // set to reg a
 	outb(0x71, reg_a | 15); // write reg a
-
+		
 	//irq_setmask_8259A(IRQ_CLOCK);
 	nmi_enable();
 }
@@ -90,3 +90,4 @@ mc146818_write(unsigned reg, unsigned datum)
 	outb(IO_RTC_CMND, reg);
 	outb(IO_RTC_DATA, datum);
 }
+
