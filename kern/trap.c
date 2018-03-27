@@ -2,6 +2,7 @@
 #include <inc/x86.h>
 #include <inc/assert.h>
 #include <inc/string.h>
+#include <inc/vsyscall.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
