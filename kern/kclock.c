@@ -7,9 +7,34 @@ int gettime(void)
 {
 	nmi_disable();
 	// LAB 12: your code here
+	struct tm tm;
+	struct tm new;
 
+	do {
+		new = tm;
+
+		outb(IO_RTC_CMND, RTC_SEC);
+		uint8_t secValue = inb(IO_RTC_DATA);
+		outb(IO_RTC_CMND, RTC_MIN);
+		uint8_t minValue = inb(IO_RTC_DATA);
+		outb(IO_RTC_CMND, RTC_HOUR);
+		uint8_t hourValue = inb(IO_RTC_DATA);
+		outb(IO_RTC_CMND, RTC_DAY);
+		uint8_t dayValue = inb(IO_RTC_DATA);
+		outb(IO_RTC_CMND, RTC_MON);
+		uint8_t monthValue = inb(IO_RTC_DATA);
+		outb(IO_RTC_CMND, RTC_YEAR);
+		uint8_t yearValue = inb(IO_RTC_DATA);
+
+		tm.tm_sec = BCD2BIN(secValue);
+		tm.tm_min = BCD2BIN(minValue);
+		tm.tm_hour = BCD2BIN(hourValue);
+		tm.tm_mday = BCD2BIN(dayValue);
+		tm.tm_mon = BCD2BIN(monthValue) - 1;
+		tm.tm_year = BCD2BIN(yearValue);
+	} while (!equal(tm, new));
 	nmi_enable();
-	return 0;
+	return timestamp(&tm);
 }
 
 void
@@ -27,7 +52,7 @@ rtc_init(void)
 	uint8_t reg_a = inb(0x71); // read reg a
 	outb(0x70, RTC_AREG); // set to reg a
 	outb(0x71, reg_a | 15); // write reg a
-		
+
 	//irq_setmask_8259A(IRQ_CLOCK);
 	nmi_enable();
 }
@@ -55,4 +80,3 @@ mc146818_write(unsigned reg, unsigned datum)
 	outb(IO_RTC_CMND, reg);
 	outb(IO_RTC_DATA, datum);
 }
-
