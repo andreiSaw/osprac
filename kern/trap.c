@@ -14,6 +14,7 @@
 #include <kern/kclock.h>
 #include <kern/picirq.h>
 #include <kern/cpu.h>
+#include <kern/vsyscall.h>
 
 #ifndef debug
 # define debug 0
