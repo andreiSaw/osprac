@@ -286,22 +286,6 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 
-	//size_t i;
-	//for (i = 0; i < npages; i++) {
-	//	pages[i].pp_ref = 0;
-	//	pages[i].pp_link = page_free_list;
-	//	page_free_list = &pages[i];
-	//}
-
-	//size_t i;
-	//pages[npages - 1].pp_ref = 0;
-	//pages[npages - 1].pp_link = NULL;
-	//for (i = npages - 2; i >= 0; i--) {
-	//	pages[i].pp_ref = 0;
-	//	pages[i].pp_link = &pages[i + 1];
-	//}
-	//page_free_list = &pages[0];
-
 	size_t nf = PADDR(boot_alloc(0)) / PGSIZE; // get the number of the next free page
 	size_t i;
 	for (i = 0; i < npages; i++) {
