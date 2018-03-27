@@ -201,8 +201,8 @@ mem_init(void)
 	//    - the new image at UVSYS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 12: Your code here.
-	boot_map_region(kern_pgdir, UVSYS, PTSIZE, PADDR(vsys), PTE_U);
-
+	// m d
+	
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -225,7 +225,7 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
 	boot_map_region(kern_pgdir, KERNBASE, (1ULL << 32) -KERNBASE, 0, PTE_W);
-	
+
 	boot_map_region(kern_pgdir, UVSYS, PTSIZE, PADDR(vsys), PTE_U);
 
 	// Check that the initial page directory has been set up correctly.
