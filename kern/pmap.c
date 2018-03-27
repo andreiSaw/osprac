@@ -184,6 +184,7 @@ mem_init(void)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
 	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U);
+	boot_map_region(kern_pgdir, (physaddr_t)pages, PTSIZE, PADDR(pages), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
@@ -193,6 +194,7 @@ mem_init(void)
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 8: Your code here.
 	boot_map_region(kern_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_U);
+	boot_map_region(kern_pgdir, (physaddr_t)envs, PTSIZE, PADDR(envs), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'vsys' array read-only by the user at linear address UVSYS
@@ -202,7 +204,7 @@ mem_init(void)
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 12: Your code here.
 	// m d
-	
+
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -227,6 +229,7 @@ mem_init(void)
 	boot_map_region(kern_pgdir, KERNBASE, (1ULL << 32) -KERNBASE, 0, PTE_W);
 
 	boot_map_region(kern_pgdir, UVSYS, PTSIZE, PADDR(vsys), PTE_U);
+	boot_map_region(kern_pgdir, (physaddr_t)vsys, PTSIZE, PADDR(vsys), PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
