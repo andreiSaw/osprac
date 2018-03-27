@@ -97,7 +97,6 @@ sys_exofork(void)
 	env->env_tf.tf_regs.reg_eax = 0; // tweak env so sys_exofork will return 0
 	env->env_status = ENV_NOT_RUNNABLE;
 	return env->env_id;
-	//panic("sys_exofork not implemented");
 }
 
 // Set envid's env_status to status, which must be ENV_RUNNABLE
@@ -128,7 +127,6 @@ sys_env_set_status(envid_t envid, int status)
 	}
 	env->env_status = status;
 	return 0;
-	//panic("sys_env_set_status not implemented");
 }
 
 // Set envid's trap frame to 'tf'.
@@ -225,7 +223,6 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	if (!page) {
 		return -E_NO_MEM;
 	}
-	//page->pp_ref++;
 	int result = page_insert(env->env_pgdir, page, va, perm);
 	if (result) {
 		// page insert failed
@@ -233,7 +230,6 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		page_free(page);
 	}
 	return result;
-	//panic("sys_page_alloc not implemented");
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space
@@ -273,12 +269,12 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	}
 	if (!PGOFF(srcva) && (uintptr_t) srcva < UTOP &&
 		!PGOFF(dstva) && (uintptr_t) dstva < UTOP) {
-		
+
 		pte_t *pte;
-		struct PageInfo *page = page_lookup(src_env->env_pgdir, srcva, &pte);	
+		struct PageInfo *page = page_lookup(src_env->env_pgdir, srcva, &pte);
 		if (page &&  // page_lookup successful
 			((perm & (PTE_U | PTE_P)) == (PTE_U | PTE_P)) && // appropriate perm
-			!(perm & (~(PTE_SYSCALL))) && 
+			!(perm & (~(PTE_SYSCALL))) &&
 			(((perm & PTE_W) & (*pte)) == (perm & PTE_W))) {
 
 			return page_insert(dst_env->env_pgdir, page, dstva, perm); // returns -E_NO_MEM if there's no memory
@@ -425,7 +421,7 @@ sys_ipc_recv(void *dstva)
 	} else {
 		curenv->env_ipc_dstva = (void *) UTOP;
 	}
-	curenv->env_ipc_recving = 1;	
+	curenv->env_ipc_recving = 1;
 	curenv->env_status = ENV_NOT_RUNNABLE;
 	curenv->env_tf.tf_regs.reg_eax = 0;
 	sched_yield();
@@ -448,7 +444,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
 	// LAB 8: Your code here.
-	
+
 	// my code
 	if (syscallno == SYS_cputs) {
 		sys_cputs((char *) a1, a2);
@@ -487,7 +483,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return -E_INVAL;
 	}
 	// end of my code
-	
+
 	//panic("syscall not implemented");
 }
-
