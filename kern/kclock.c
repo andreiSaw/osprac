@@ -3,6 +3,16 @@
 #include <inc/x86.h>
 #include <inc/time.h>
 #include <kern/kclock.h>
+#include <inc/time.h>
+
+bool equal(struct tm a1, struct tm a2)
+{
+	if(a1.tm_sec == a2.tm_sec && a1.tm_min == a2.tm_min &&
+	a1.tm_hour == a2.tm_hour && a1.tm_mday == a2.tm_mday &&
+	a1.tm_mon == a2.tm_mon && a1.tm_year == a2.tm_year)
+		return true;
+	else return false;
+}
 
 bool equal(struct tm a1, struct tm a2)
 {
@@ -62,7 +72,7 @@ rtc_init(void)
 	uint8_t reg_a = inb(0x71); // read reg a
 	outb(0x70, RTC_AREG); // set to reg a
 	outb(0x71, reg_a | 15); // write reg a
-		
+
 	//irq_setmask_8259A(IRQ_CLOCK);
 	nmi_enable();
 }
@@ -90,4 +100,3 @@ mc146818_write(unsigned reg, unsigned datum)
 	outb(IO_RTC_CMND, reg);
 	outb(IO_RTC_DATA, datum);
 }
-

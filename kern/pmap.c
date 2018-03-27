@@ -182,7 +182,7 @@ mem_init(void)
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
-	// Your code goes here:
+	// LAB 7: Your code goes here:
 	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U);
 	boot_map_region(kern_pgdir, (physaddr_t)pages, PTSIZE, PADDR(pages), PTE_W);
 
@@ -216,7 +216,7 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
+	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_U);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -400,13 +400,6 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-
-	// relevant page table does not exist
-	//if (create == false) {
-	//	return NULL;
-	//} else {
-		//page_alloc();
-	//}
 	pde_t *pgdir_entry = &pgdir[PDX(va)]; // locate the page directory entry
 	if (*pgdir_entry) {
 		// physical address of p

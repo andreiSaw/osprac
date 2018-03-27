@@ -39,4 +39,3 @@ _start:
 args_exist:
 	call libmain
 1:	jmp 1b
-
