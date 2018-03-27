@@ -2,6 +2,7 @@
 
 #include <inc/x86.h>
 #include <kern/kclock.h>
+#include <inc/time.h>
 
 int gettime(void)
 {
