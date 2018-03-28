@@ -8,5 +8,5 @@ umain(int argc, char **argv)
 	cprintf("hello, world\n");
 	cprintf("i am environment %08x\n", envid1);
 	int r = sys_page_alloc(0, (void *)(UXSTACKTOP - PGSIZE), (PTE_U|PTE_P|PTE_W));
-	cprintf("page allocated %i", r);
+	cprintf("page allocated %i\n", r);
 }
