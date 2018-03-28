@@ -42,7 +42,7 @@ pgfault(struct UTrapframe *utf)
 	// itask
 	//sys_page_alloc(0, PFTEMP, PTE_W | PTE_P | PTE_U);
 	sys_page_alloc(sys_getenvid(), (void *)PFTEMP, PTE_U | PTE_P);
-	sys_page_map(sys_getenvid(), (void *)PFTEMP,sys_getenvid(), (void*)PFTEMP, PTE_U | PTE_W | PTE_P)
+	sys_page_map(sys_getenvid(), (void *)PFTEMP,sys_getenvid(), (void*)PFTEMP, PTE_U | PTE_W | PTE_P);
 	memcpy(PFTEMP, addr, PGSIZE);
 	sys_page_map(0, PFTEMP,	0, addr, (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W);
 	sys_page_unmap(0, PFTEMP);
