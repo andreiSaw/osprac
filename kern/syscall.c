@@ -13,6 +13,8 @@
 #include <kern/sched.h>
 #include <kern/kclock.h>
 
+#define PTE_COW		0x800
+
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
 // Destroys the environment on memory errors.
