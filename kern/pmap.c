@@ -327,6 +327,7 @@ page_init(void)
 	for (i = epm; i < nf; i++) {
 		pages[i].pp_link = NULL;
 	}
+	test_page = page_alloc(ALLOC_ZERO);
 }
 
 //
@@ -347,7 +348,6 @@ page_alloc(int alloc_flags)
 	// Fill this function in
 	struct PageInfo *free_page = page_free_list;
 	//itask
-	test_page = page_alloc(ALLOC_ZERO);
 	if (free_page) {
 		page_free_list = free_page->pp_link;
 		free_page->pp_link = NULL;
