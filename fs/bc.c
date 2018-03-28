@@ -80,13 +80,13 @@ bc_pgfault(struct UTrapframe *utf)
 // Hint: Use the PTE_SYSCALL constant when calling sys_page_map.
 // Hint: Don't forget to round addr down.
 void flush_block(void *addr) {
-  uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
+    uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
 	int r;
-  if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
-    panic("flush_block of bad va %p", addr);
-  if (!va_is_mapped(addr) || !va_is_dirty(addr))
+    if (addr < (void*)DISKMAP || addr >= (void*)(DISKMAP + DISKSIZE))
+        panic("flush_block of bad va %p", addr);
+    if (!va_is_mapped(addr) || !va_is_dirty(addr)) {
 		return;
-	
+	}
 	addr = ROUNDDOWN(addr, PGSIZE);
 	r = ide_write(blockno * BLKSECTS, addr, BLKSECTS);
 	if (r != 0) {
@@ -140,3 +140,4 @@ bc_init(void)
 	// cache the super block by reading it once
 	memmove(&super, diskaddr(1), sizeof super);
 }
+

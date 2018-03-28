@@ -13,6 +13,8 @@
 #include <kern/kclock.h>
 #include <kern/picirq.h>
 #include <kern/cpu.h>
+#include <inc/vsyscall.h>
+#include <kern/vsyscall.h>
 
 #ifndef debug
 # define debug 0
@@ -161,6 +163,7 @@ clock_idt_init(void)
 	extern void (*clock_thdlr)(void);
 	// init idt structure
 	SETGATE(idt[IRQ_OFFSET + IRQ_CLOCK], 0, GD_KT, (int)(&clock_thdlr), 0);
+	vsys[VSYS_gettime] = gettime();	
 	lidt(&idt_pd);
 }
 
@@ -255,6 +258,7 @@ trap_dispatch(struct Trapframe *tf)
 		// my code
 		uint8_t status = rtc_check_status();
 		pic_send_eoi(status);
+		vsys[VSYS_gettime] = gettime();	
 		// end of my code		
 		sched_yield();
 		return;

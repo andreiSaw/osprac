@@ -438,8 +438,7 @@ static int
 sys_gettime(void)
 {
 	// LAB 12: Your code here.
-	panic("sys_gettime not implemented");
-	return 0;
+	return gettime();
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -478,6 +477,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return (int32_t) sys_ipc_try_send((envid_t) a1, a2, (void *) a3, a4);
 	} else if (syscallno == SYS_ipc_recv) {
 		return (int32_t) sys_ipc_recv((void *) a1);
+	} else if (syscallno == SYS_gettime) {
+		return (int32_t) sys_gettime();
 	} else if (syscallno == SYS_yield) {
 		sys_yield();
 		return 0;
