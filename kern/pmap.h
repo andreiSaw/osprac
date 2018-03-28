@@ -16,6 +16,8 @@ extern struct PageInfo *pages;
 extern size_t npages;
 
 extern pde_t *kern_pgdir;
+//itask
+extern struct PageInfo *test_page;
 
 
 /* This macro takes a kernel virtual address -- an address that points above
