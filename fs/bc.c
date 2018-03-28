@@ -51,7 +51,7 @@ bc_pgfault(struct UTrapframe *utf)
 	// LAB 10: you code here:
 	addr = ROUNDDOWN(addr, PGSIZE);
 	// itask:
-	envid1 = thisenv->env_id;
+	envid_t envid1 = thisenv->env_id;
 	//r = sys_page_alloc(thisenv->env_id, addr, (PTE_U|PTE_P|PTE_W));
 	sys_page_alloc(envid1, addr, PTE_U | PTE_P);
 	sys_page_map(envid1, addr, envid1, addr, PTE_U | PTE_W | PTE_P);
