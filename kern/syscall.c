@@ -225,9 +225,10 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	}
 	//itask
 	struct PageInfo *page;
-	if (perm & PTE_U)
+	if (perm & PTE_U) {
 		perm = perm | PTE_W;
 	 	page = page_alloc(ALLOC_ZERO);
+	}
 	else {
 		page = test_page;
 		perm = perm | PTE_COW;

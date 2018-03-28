@@ -54,7 +54,6 @@ bc_pgfault(struct UTrapframe *utf)
 	envid_t envid1 = thisenv->env_id;
 	//r = sys_page_alloc(thisenv->env_id, addr, (PTE_U|PTE_P|PTE_W));
 	r = sys_page_alloc(envid1, addr, PTE_U | PTE_P);
-	sys_page_map(envid1, addr, envid1, addr, PTE_U | PTE_W | PTE_P);
  	if (r != 0) {
 		panic("bg_pgfault: allocation error (code %d)\n", r);
 	}
