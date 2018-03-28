@@ -24,7 +24,7 @@ i386_init(void)
 	// Clear the uninitialized global data (BSS) section of our program.
 	// This ensures that all static/global variables start out zero.
 	memset(edata, 0, end - edata);
-
+	
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
 	cons_init();
@@ -47,7 +47,6 @@ i386_init(void)
 
 	pic_init();
 	rtc_init();
-	irq_setmask_8259A(irq_mask_8259A & ~ (1 << IRQ_CLOCK));
 
 #ifdef CONFIG_KSPACE
 	// Touch all you want.
@@ -123,3 +122,4 @@ _warn(const char *file, int line, const char *fmt,...)
 	cprintf("\n");
 	va_end(ap);
 }
+

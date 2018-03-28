@@ -6,7 +6,6 @@
 #include <inc/string.h>
 #include <inc/assert.h>
 #include <inc/elf.h>
-#include <kern/kdebug.h>
 
 #include <kern/env.h>
 #include <kern/pmap.h>
@@ -35,7 +34,7 @@ static struct Env *env_free_list;	// Free environment list
 // Set up global descriptor table (GDT) with separate segments for
 // kernel mode and user mode.  Segments serve many purposes on the x86.
 // We don't use any of their memory-mapping capabilities, but we need
-// them to switch privilege levels.
+// them to switch privilege levels. 
 //
 // The kernel and user segments are identical except for the DPL.
 // To load the SS register, the CPL must equal the DPL.  Thus,
@@ -126,26 +125,14 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 void
 env_init(void)
 {
-	// Set up envs array
-	//LAB 3: Your code here.
-
-	int i;
-	struct Env *last = NULL;
-	for (i = 0; i < NENV; ++i) {
-		envs[i].env_status = ENV_FREE;
-		envs[i].env_runs = 0;
+	int i = NENV - 1;
+	for (; i >= 0; --i) {
 		envs[i].env_id = 0;
-		envs[i].env_parent_id = 0;
-
-		if (last) {
-			last->env_link = &envs[i];
-		} else {
-			env_free_list = &envs[i];
-		}
-
-		last = &envs[i];
+		envs[i].env_status = ENV_FREE;
+		envs[i].env_link = env_free_list;
+		env_free_list = &envs[i];
 	}
-
+	
 	// Per-CPU part of the initialization
 	env_init_percpu();
 }
@@ -226,6 +213,7 @@ env_setup_vm(struct Env *e)
 //	-E_NO_FREE_ENV if all NENVS environments are allocated
 //	-E_NO_MEM on memory exhaustion
 //
+
 int
 env_alloc(struct Env **newenv_store, envid_t parent_id)
 {
@@ -277,8 +265,8 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_ss = GD_KD | 0;
 	e->env_tf.tf_cs = GD_KT | 0;
 	//LAB 3: Your code here.
-	// e->env_tf.tf_esp = 0x210000;
-	e->env_tf.tf_esp = 0x210000 - ENVX(e->env_id) * 2 * PGSIZE;
+	e->env_tf.tf_esp = 0x210000 + ENVX(e->env_id) * 2 * PGSIZE;
+
 #else
 	e->env_tf.tf_ds = GD_UD | 3;
 	e->env_tf.tf_es = GD_UD | 3;
@@ -322,12 +310,13 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	
 	void *start = ROUNDDOWN(va, PGSIZE);
 	void *end = ROUNDUP(va + len, PGSIZE);
 	for (; start < end; start += PGSIZE) {
 		struct PageInfo *page = page_alloc(0);
 		if (!page) {
-			panic("region alloc panic");
+			panic("region_alloc: page is zero");
 		}
 		page_insert(e->env_pgdir, page, start, PTE_P | PTE_W | PTE_U);
 	}
@@ -340,52 +329,41 @@ bind_functions(struct Env *e, struct Elf *elf)
 	//find_function from kdebug.c should be used
 	//LAB 3: Your code here.
 
-    // section headers table
-	struct Secthdr *sh = (struct Secthdr *)((uint8_t *)elf + elf->e_shoff);
+	struct Secthdr *symtab = NULL;
+	struct Secthdr *symstrtab = NULL;
 
-    // section name string table
-    char *sname_strtable = (char *)elf + (sh + elf->e_shstrndx)->sh_offset;
+	struct Secthdr *first_header = (struct Secthdr *)((uint8_t *) elf + elf->e_shoff);
+	
+	struct Secthdr *sh = first_header;
+	struct Secthdr *esh = sh + elf->e_shnum;
 
-    uint32_t i;
-	for (i = 0; i < elf->e_shnum; i++) {
-		if (sh[i].sh_type == ELF_SHT_STRTAB) {
-			char *tabname = sname_strtable + sh[i].sh_name;
-			if (strncmp(tabname, ".strtab", 7) == 0) {
-				break;
-			}
+	for  (; sh < esh; ++sh) {
+		char* name = (char *) ((uint8_t *) elf + first_header[elf->e_shstrndx].sh_offset + sh->sh_name);
+		
+		if (sh->sh_type == ELF_SHT_SYMTAB && !strcmp(name, ".symtab")) {
+			symtab = sh;
+		}
+		if (sh->sh_type == ELF_SHT_STRTAB && !strcmp(name, ".strtab")) {
+			symstrtab = sh;
 		}
 	}
-
-	// string table of symbol table entries
-	char *st_strtable = (char *)elf + sh[i].sh_offset;
-
-	for (i = 0; i < elf->e_shnum; i++) {
-		if (sh[i].sh_type == ELF_SHT_SYMTAB) {
-
-			struct Elf32_Sym *st = (struct Elf32_Sym *)((uint8_t *)elf + sh[i].sh_offset);
-			uint8_t entry_count = sh[i].sh_size / sh[i].sh_entsize;
-
-			uint32_t j;
-			for (j = 0; j < entry_count; j++) {
-				const char *fname = st_strtable + st[j].st_name;
-				uintptr_t kern_addr = find_function(fname);
-				if (kern_addr > 0) {
-					*((uintptr_t *) st[j].st_value) = kern_addr;
-				}
-			}
-		}
+	if (!symstrtab || !symtab) {
+		panic("no tab");	
 	}
 
+	struct Elf32_Sym *st = (struct Elf32_Sym *) ((uint8_t *) elf + symtab->sh_offset);
+	struct Elf32_Sym *est = (struct Elf32_Sym *) ((uint8_t *) st + symtab->sh_size);
 
-	/*
-	*((int *) 0x00231008) = (int) &cprintf;
-	*((int *) 0x00221004) = (int) &sys_yield;
-	*((int *) 0x00231004) = (int) &sys_yield;
-	*((int *) 0x00241004) = (int) &sys_yield;
-	*((int *) 0x0022100c) = (int) &sys_exit;
-	*((int *) 0x00231010) = (int) &sys_exit;
-	*((int *) 0x0024100c) = (int) &sys_exit;
-	*/
+	for (; st < est; ++st) {
+		if (ELF32_ST_BIND(st->st_info) == STT_OBJECT) {
+			char* name = (char *) ((uint8_t *) elf + symstrtab->sh_offset + st->st_name);
+			uintptr_t ptr = find_function(name);
+
+			if (ptr != 0) {
+				*((uint32_t *) st->st_value) = (uint32_t) ptr;
+			}
+		}	
+	}
 }
 #endif
 
@@ -420,6 +398,7 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	//  You should only load segments with ph->p_type == ELF_PROG_LOAD.
 	//  Each segment's address can be found in ph->p_va
 	//  and its size in memory can be found in ph->p_memsz.
+	
 	//  The ph->p_filesz bytes from the ELF binary, starting at
 	//  'binary + ph->p_offset', should be copied to address
 	//  ph->p_va.  Any remaining memory bytes should be cleared to zero.
@@ -442,38 +421,29 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	//  to make sure that the environment starts executing there.
 	//  What?  (See env_run() and env_pop_tf() below.)
 
-	//LAB 3: Your code here.
+	struct Elf *elf = (struct Elf *) binary;
+	if (elf->e_magic != ELF_MAGIC)
+		return;
+	
+	struct Proghdr *ph = (struct Proghdr *) ((uint8_t *)elf + elf->e_phoff);
+	struct Proghdr *eph = ph + elf->e_phnum;
 
-	struct Proghdr *ph, *eph;
-    struct Elf *ELFHDR = (struct Elf *)binary;
-
-    // is this a valid ELF?
-	if (ELFHDR->e_magic != ELF_MAGIC)
-		panic("bad binary\n");
-
-	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
-	eph = ph + ELFHDR->e_phnum;
-	// LAB 8
 	lcr3(PADDR(e->env_pgdir));
-    for (; ph < eph; ph++) {
 
+	for (; ph < eph; ph++) {
 		if (ph->p_type == ELF_PROG_LOAD) {
-			// LAB 8
-			region_alloc(e, (void *) ph->p_va, ph->p_memsz);
-
-      memmove((void *)ph->p_va, (void *)(binary + ph->p_offset), ph->p_filesz);
-      memset((void *)ph->p_va + ph->p_filesz, 0, (ph->p_memsz - ph->p_filesz));
-        }
-    }
-
-    e->env_tf.tf_eip = ELFHDR->e_entry;
-
-
+			if (ph->p_filesz <= ph->p_memsz) {
+				region_alloc(e, (void *) ph->p_va, ph->p_memsz);
+				memmove((void*) ph->p_va, (void*) binary + ph->p_offset, ph->p_filesz); // move memory to p_va
+				memset((void*) ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz); // sets 0
+			}						
+		}
+	}		
+	e->env_tf.tf_eip = elf->e_entry;
+	
 #ifdef CONFIG_KSPACE
 	// Uncomment this for task №5.
-	//bind_functions();
-	bind_functions(e, ELFHDR);
-
+	bind_functions(e, elf);
 #endif
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
@@ -492,17 +462,19 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 void
 env_create(uint8_t *binary, size_t size, enum EnvType type)
 {
+	struct Env *env;
 	//LAB 3: Your code here.
-	struct Env *e;
-    if (env_alloc(&e, 0) == 0) {
-        load_icode(e, binary, size);
-        e->env_type = type;
-    } else {
-        panic("alloc error\n");
-    }
+	if (env_alloc(&env, 0) != 0)
+		return;
+	
+	env->env_type = type;
+	load_icode(env, binary, size);	
 
 	// If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
 	// LAB 10: Your code here.
+	if (type == ENV_TYPE_FS) {
+		env->env_tf.tf_eflags |= FL_IOPL_3;
+	}
 }
 
 //
@@ -570,17 +542,9 @@ void
 env_destroy(struct Env *e)
 {
 	//LAB 3: Your code here.
-
-	if (e->env_status == ENV_RUNNING && curenv != e) {
-		e->env_status = ENV_DYING;
-		return;
-	}
-
 	env_free(e);
-
-	if (curenv == e) {
-		curenv = NULL;
-		sched_yield();
+	if (e == curenv) {
+		sched_yield();	
 	}
 }
 
@@ -661,12 +625,12 @@ env_pop_tf(struct Trapframe *tf)
 void
 env_run(struct Env *e)
 {
-//#ifdef CONFIG_KSPACE
-//	cprintf("envrun %s: %d\n",
-//		e->env_status == ENV_RUNNING ? "RUNNING" :
-//		    e->env_status == ENV_RUNNABLE ? "RUNNABLE" : "(unknown)",
-//		ENVX(e->env_id));
-//#endif
+#ifdef CONFIG_KSPACE
+	cprintf("envrun %s: %d\n",
+		e->env_status == ENV_RUNNING ? "RUNNING" :
+		    e->env_status == ENV_RUNNABLE ? "RUNNABLE" : "(unknown)",
+		ENVX(e->env_id));
+#endif
 
 	// Step 1: If this is a context switch (a new environment is running):
 	//	   1. Set the current environment (if any) back to
@@ -686,15 +650,21 @@ env_run(struct Env *e)
 	//
 	//LAB 3: Your code here.
 
-	if (curenv) {
-        if (curenv->env_status == ENV_RUNNING) {
-            curenv->env_status = ENV_RUNNABLE;
-        }
-    }
-    curenv = e;
-    curenv->env_status = ENV_RUNNING;
-    curenv->env_runs++;
-	// lab 8
-	lcr3(PADDR(curenv->env_pgdir));
+
+	if (curenv != e) {
+		if (curenv != NULL) {		
+			if (curenv->env_status == ENV_RUNNING) {
+				curenv->env_status = ENV_RUNNABLE;
+			}
+		}
+		curenv = e;
+		curenv->env_status = ENV_RUNNING;
+		curenv->env_runs++;
+
+		// lab 8
+		lcr3(PADDR(curenv->env_pgdir));
+	}
+
 	env_pop_tf(&e->env_tf);
 }
+

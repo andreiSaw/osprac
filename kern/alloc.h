@@ -14,4 +14,6 @@ union header { /* block header */
 
 typedef union header Header;
 
+extern struct spinlock alloc_lock;
+
 #endif
