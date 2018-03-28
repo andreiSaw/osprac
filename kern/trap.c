@@ -75,58 +75,58 @@ trap_init(void)
 //	extern struct Segdesc gdt[];
 
 	// LAB 8: Your code here.
+	extern void thdlr0();
+	extern void thdlr1();
+	extern void thdlr2();
+	extern void thdlr3();
+	extern void thdlr4();
+	extern void thdlr5();
+	extern void thdlr6();
+	extern void thdlr7();
+	extern void thdlr8();
+	extern void thdlr10();
+	extern void thdlr11();
+	extern void thdlr12();
+	extern void thdlr13();
+	extern void thdlr14();
+	extern void thdlr16();
+	extern void thdlr17();
+	extern void thdlr18();
+	extern void thdlr19();
+	extern void thdlr48();
+	extern void irq_thdlr0();
+	extern void irq_thdlr1();
+	extern void irq_thdlr4();
+	extern void irq_thdlr7();
+	extern void irq_thdlr14();
+	extern void irq_thdlr19();
 
-	extern void divide_thdlr();
-	extern void debug_thdlr();
-	extern void nmi_thdlr();
-	extern void brkpt_thdlr();
-	extern void oflow_thdlr();
-	extern void bound_thdlr();
-	extern void illop_thdlr();
-	extern void device_thdlr();
-	extern void dblflt_thdlr();
-	extern void tss_thdlr();
-	extern void segnp_thdlr();
-	extern void stack_thdlr();
-	extern void gpflt_thdlr();
-	extern void pgflt_thdlr();
-	extern void fperr_thdlr();
-	extern void align_thdlr();
-	extern void mchk_thdlr();
-	extern void simderr_thdlr();
-	extern void syscall_thdlr();
-	extern void irq_timer_thdlr();
-	extern void irq_kbd_thdlr();
-	extern void irq_serial_thdlr();
-	extern void irq_spurious_thdlr();
-	extern void irq_ide_thdlr();
-	extern void irq_error_thdlr();
+	SETGATE(idt[0], 0, GD_KT, thdlr0, 0);
+	SETGATE(idt[1], 0, GD_KT, thdlr1, 0);
+	SETGATE(idt[2], 0, GD_KT, thdlr2, 0);
+	SETGATE(idt[3], 0, GD_KT, thdlr3, 3);
+	SETGATE(idt[4], 0, GD_KT, thdlr4, 0);
+	SETGATE(idt[5], 0, GD_KT, thdlr5, 0);
+	SETGATE(idt[6], 0, GD_KT, thdlr6, 0);
+	SETGATE(idt[7], 0, GD_KT, thdlr7, 0);
+	SETGATE(idt[8], 0, GD_KT, thdlr8, 0);
+	SETGATE(idt[10], 0, GD_KT, thdlr10, 0);
+	SETGATE(idt[11], 0, GD_KT, thdlr11, 0);
+	SETGATE(idt[12], 0, GD_KT, thdlr12, 0);
+	SETGATE(idt[13], 0, GD_KT, thdlr13, 0);
+	SETGATE(idt[14], 0, GD_KT, thdlr14, 0);
+	SETGATE(idt[16], 0, GD_KT, thdlr16, 0);
+	SETGATE(idt[17], 0, GD_KT, thdlr17, 0);
+	SETGATE(idt[18], 0, GD_KT, thdlr18, 0);
+	SETGATE(idt[19], 0, GD_KT, thdlr19, 0);
+	SETGATE(idt[48], 0, GD_KT, thdlr48, 3);
+	SETGATE(idt[IRQ_OFFSET + 0], 0, GD_KT, irq_thdlr0, 0);
+	SETGATE(idt[IRQ_OFFSET + 1], 0, GD_KT, irq_thdlr1, 0);
+	SETGATE(idt[IRQ_OFFSET + 4], 0, GD_KT, irq_thdlr1, 0);
+	SETGATE(idt[IRQ_OFFSET + 7], 0, GD_KT, irq_thdlr1, 0);
+	SETGATE(idt[IRQ_OFFSET + 19], 0, GD_KT, irq_thdlr1, 0);
 
-	SETGATE(idt[T_DIVIDE], 0, GD_KT, divide_thdlr, 0);
-	SETGATE(idt[T_DEBUG], 0, GD_KT, debug_thdlr, 0);
-	SETGATE(idt[T_NMI], 0, GD_KT, nmi_thdlr, 0);
-	SETGATE(idt[T_BRKPT], 0, GD_KT, brkpt_thdlr, 3);
-	SETGATE(idt[T_OFLOW], 0, GD_KT, oflow_thdlr, 0);
-	SETGATE(idt[T_BOUND], 0, GD_KT, bound_thdlr, 0);
-	SETGATE(idt[T_ILLOP], 0, GD_KT, illop_thdlr, 0);
-	SETGATE(idt[T_DEVICE], 0, GD_KT, device_thdlr, 0);
-	SETGATE(idt[T_DBLFLT], 0, GD_KT, dblflt_thdlr, 0);
-	SETGATE(idt[T_TSS], 0, GD_KT, tss_thdlr, 0);
-	SETGATE(idt[T_SEGNP], 0, GD_KT, segnp_thdlr, 0);
-	SETGATE(idt[T_STACK], 0, GD_KT, stack_thdlr, 0);
-	SETGATE(idt[T_GPFLT], 0, GD_KT, gpflt_thdlr, 0);
-	SETGATE(idt[T_PGFLT], 0, GD_KT, pgflt_thdlr, 0);
-	SETGATE(idt[T_FPERR], 0, GD_KT, fperr_thdlr, 0);
-	SETGATE(idt[T_ALIGN], 0, GD_KT, align_thdlr, 0);
-	SETGATE(idt[T_MCHK], 0, GD_KT, mchk_thdlr, 0);
-	SETGATE(idt[T_SIMDERR], 0, GD_KT, simderr_thdlr, 0);
-	SETGATE(idt[T_SYSCALL], 0, GD_KT, syscall_thdlr, 3);
-	SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, irq_timer_thdlr, 0);
-	SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, irq_kbd_thdlr, 0);
-	SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, irq_serial_thdlr, 0);
-	SETGATE(idt[IRQ_OFFSET + IRQ_SPURIOUS], 0, GD_KT, irq_spurious_thdlr, 0);
-	SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, irq_ide_thdlr, 0);
-	SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, irq_error_thdlr, 0);
+	// end of my code
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -224,9 +224,8 @@ trap_dispatch(struct Trapframe *tf)
 		print_trapframe(tf);
 		return;
 	}
-
-	// lab 8
-
+	
+	// my code
 	if (tf->tf_trapno == T_BRKPT) {
 		return monitor(tf);
 	}
@@ -240,11 +239,23 @@ trap_dispatch(struct Trapframe *tf)
 		regs->reg_eax = syscall(regs->reg_eax, regs->reg_edx, regs->reg_ecx, regs->reg_ebx, regs->reg_edi, regs->reg_esi);
 		return;
 	}
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_KBD) {
+   		kbd_intr();
+   		return;
+ 	}
 
-	// end of lab 8
+ 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SERIAL) {
+   		serial_intr();
+   		return;
+ 	}
+	// end of my code		
+		
 
 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_CLOCK) {
-		pic_send_eoi(IRQ_CLOCK + rtc_check_status());
+		// my code
+		uint8_t status = rtc_check_status();
+		pic_send_eoi(status);
+		// end of my code		
 		sched_yield();
 		return;
 	}
@@ -281,12 +292,17 @@ trap(struct Trapframe *tf)
 		cprintf("Incoming TRAP frame at %p\n", tf);
 	}
 
+	//print_trapframe(tf);
 	assert(curenv);
 
 	// Garbage collect if current enviroment is a zombie
 	if (curenv->env_status == ENV_DYING) {
 		env_free(curenv);
 		curenv = NULL;
+		// my code		
+		//uint8_t status = rtc_check_status();
+		//pic_send_eoi(status);
+		// end of my code		
 		sched_yield();
 	}
 
@@ -300,6 +316,11 @@ trap(struct Trapframe *tf)
 	// Record that tf is the last real trapframe so
 	// print_trapframe can print some additional information.
 	last_tf = tf;
+	
+	// my code
+	//uint8_t status = rtc_check_status();
+	//pic_send_eoi(status);
+	// end of my code
 
 	// Dispatch based on what type of trap occurred
 	trap_dispatch(tf);
@@ -307,10 +328,11 @@ trap(struct Trapframe *tf)
 	// If we made it to this point, then no other environment was
 	// scheduled, so we should return to the current environment
 	// if doing so makes sense.
-	if (curenv && curenv->env_status == ENV_RUNNING)
+	if (curenv && curenv->env_status == ENV_RUNNING) {
 		env_run(curenv);
-	else
+	} else {
 		sched_yield();
+	}
 }
 
 
@@ -325,10 +347,11 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 8: Your code here.
-	
+	// my code	
 	if ((tf->tf_cs & 3) == 0) {
-		panic("page fault in kernel mode");	
+		panic("page fault in kernel mode\n");
 	}
+	// end of my code
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
@@ -362,18 +385,17 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 9: Your code here.
-	
 	if (curenv->env_pgfault_upcall) {
 		uintptr_t utf_addr;
-		if (tf->tf_esp + PGSIZE >= UXSTACKTOP &&  tf->tf_esp <= UXSTACKTOP - 1)	{
-			utf_addr = tf->tf_esp - 4;		
+		if (tf->tf_esp + PGSIZE >= UXSTACKTOP && tf->tf_esp <= UXSTACKTOP - 1) {
+			utf_addr = tf->tf_esp - 4;
 		} else {
 			utf_addr = UXSTACKTOP;
 		}
 		utf_addr -= (sizeof(struct UTrapframe));
-		struct UTrapframe *utf = (struct UTrapframe *) utf_addr;
+		struct UTrapframe *utf = (struct UTrapframe *)utf_addr;
 		user_mem_assert(curenv, utf, (sizeof(struct UTrapframe)), PTE_U | PTE_W);
-
+		
 		utf->utf_fault_va = fault_va;
 		utf->utf_err = tf->tf_err;
 		utf->utf_regs = tf->tf_regs;
@@ -381,6 +403,7 @@ page_fault_handler(struct Trapframe *tf)
 		utf->utf_eflags = tf->tf_eflags;
 		utf->utf_esp = tf->tf_esp;
 
+		// branch to curenv->env_pgfault_upcall
 		tf->tf_esp = utf_addr;
 		tf->tf_eip = (uintptr_t) curenv->env_pgfault_upcall;
 		env_run(curenv);

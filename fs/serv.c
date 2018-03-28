@@ -238,15 +238,26 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 
 	// LAB 10: Your code here.
 	struct OpenFile *o;
-	int r;
-	if ((r = openfile_lookup(envid, req->req_fileid, &o)) < 0)
-			return r;
-	r = file_write(o->o_file, req->req_buf, req->req_n, o->o_fd->fd_offset);
-	if(r < 0)
-			return r;
-	o->o_fd->fd_offset += r;
-	return r;
-	//panic("serve_write not implemented");
+	int r = openfile_lookup(envid, req->req_fileid, &o);
+	if (r != 0) {
+		cprintf("serve_write: lookup error (code %d)\n", r);
+		return r;
+	}
+
+	struct File *f = o->o_file;
+	struct Fd *fd = o->o_fd;
+	size_t wrsz = req->req_n < PGSIZE ? req->req_n : PGSIZE;
+	if (fd->fd_offset + wrsz > f->f_size) {
+		f->f_size = fd->fd_offset + wrsz;
+	}
+	ssize_t wrnsz = file_write(f, req->req_buf, wrsz, fd->fd_offset);
+	if (wrnsz < 0) {
+		cprintf("serve_write: file write error (code %d)\n", wrnsz);
+		return wrnsz;
+	}
+
+	fd->fd_offset += wrnsz;
+	return wrnsz;
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the
@@ -360,3 +371,4 @@ umain(int argc, char **argv)
         fs_test();
 	serve();
 }
+

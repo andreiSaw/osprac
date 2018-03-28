@@ -27,11 +27,11 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "hello_world", "Display 'hello, world!'", mon_hello_world },
-	{ "backtrace", "Display stacktrace", mon_backtrace },
-	{ "timer_start", "Timer start", mon_timer_start },
-	{ "timer_stop", "Timer stop", mon_timer_stop },
-	{ "page_list", "Display page list", mon_page_list },
+    { "message", "Display information about the kernel", mon_message },
+    { "backtrace", "Display stack backtrace", mon_backtrace },
+    { "timer_start", "start timer", mon_start },
+    { "timer_stop", "stop timer", mon_stop },
+	{ "pages", "Display free and allocated pages", mon_pages }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -67,83 +67,99 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
-int
-mon_hello_world(int argc, char **argv, struct Trapframe *tf)
-{
-	cprintf("hello world!\n");
+int 
+mon_pages(int argc, char **argv, struct Trapframe *tf) {
+	size_t i, j;
+	for (i = 1, j = 0; i < npages; i++) {
+		if (!pages[i - 1].pp_link && pages[i].pp_link) {
+			if (i - j == 1) {
+				cprintf("%d ALLOCATED\n", j + 1);
+			} else {
+				cprintf("%d..%d ALLOCATED\n", j + 1, i);
+			}
+			j = i;
+		} else if (pages[i - 1].pp_link && !pages[i].pp_link) {
+			if (i - j == 1) {
+				cprintf("%d FREE\n", j + 1);
+			} else {
+				cprintf("%d..%d FREE\n", j + 1, i);
+			}
+			j = i;
+		}			
+	}
+	if (j == npages - 1) {
+		if (!pages[j].pp_link) {
+			cprintf("%d ALLOCATED\n", j + 1);
+		} else {
+			cprintf("%d FREE\n", j + 1);
+		}
+	} else {
+		if (!pages[j].pp_link) {
+			cprintf("%d..%d ALLOCATED\n", j + 1, npages);
+		} else {
+			cprintf("%d..%d FREE\n", j + 1, npages);
+		}
+	}		
 	return 0;
 }
+
+int
+mon_message(int argc, char **argv, struct Trapframe *tf)
+{
+	cprintf("Special Message %o\n", 9);
+	return 0;
+}
+
+int
+mon_start(int argc, char **argv, struct Trapframe *tf)
+{
+	timer_start();
+	return 0;
+}
+
+int
+mon_stop(int argc, char **argv, struct Trapframe *tf)
+{
+	timer_stop();
+	return 0;
+}
+
 
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	cprintf("Stack backtrace:\n");
+	// Your code here.
+    cprintf("Stack backtrace:\n");
+    uint32_t *ebp = (uint32_t *) read_ebp();
+    //int i = 0;
+    struct Eipdebuginfo *info = NULL;
 
-	int ebp = read_ebp();
-	while (ebp != 0) {
-		int eip = *((int*)ebp + 1);
-		int arg1 = *((int*)ebp + 2);
-		int arg2 = *((int*)ebp + 3);
-		int arg3 = *((int*)ebp + 4);
-		int arg4 = *((int*)ebp + 5);
-		int arg5 = *((int*)ebp + 6);
-		cprintf("  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n", ebp, eip, arg1, arg2, arg3, arg4, arg5);
-		
-		struct Eipdebuginfo* info = NULL;
-		debuginfo_eip(eip, info);
-		cprintf("    %s:%d: ", info->eip_file, info->eip_line);
-		cprintf("%.*s", info->eip_fn_namelen, info->eip_fn_name);
-		cprintf("+%d\n", (eip - info->eip_fn_addr));
+	// while (ebp < (uint32_t *)0x0010f000) {
+    while (ebp) {
+        uint32_t base = (uint32_t)(ebp);
+        uint32_t eip = *(ebp + 1);
+        uint32_t arg1 = *(ebp + 2);
+        uint32_t arg2 = *(ebp + 3);
+        uint32_t arg3 = *(ebp + 4);
+        uint32_t arg4 = *(ebp + 5);
+        uint32_t arg5 = *(ebp + 6);
 
-		ebp = *((int*)ebp);
-	}
-	
+        cprintf("  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n", base, eip, arg1, arg2, arg3, arg4, arg5);
+        
+        if(debuginfo_eip(eip, info) >= 0) {
+            cprintf("    %s:%d: %.*s+%d\n", info->eip_file, info->eip_line, info->eip_fn_namelen, info->eip_fn_name, eip - (uint32_t) info->eip_fn_addr);
+        }
+
+        ebp = (uint32_t *) *ebp;
+    }
+    //int i;
+    //for (i = 0; i < KSTKSIZE; i++) {
+    //    cprintf("ebp %08x  eip   args ", read_ebp());
+    //}
 	return 0;
 }
 
-int
-mon_timer_start(int argc, char **argv, struct Trapframe *tf)
-{
-	timer_start();	
-	return 0;
-}
 
-int
-mon_timer_stop(int argc, char **argv, struct Trapframe *tf)
-{
-	timer_stop();	
-	return 0;
-}
-
-int
-mon_page_list(int argc, char **argv, struct Trapframe *tf)
-{
-	bool is_free = pages[0].pp_ref == 1; 
-	int start_index = 0; 
-	if (npages > 1) { 
-		int i; 
-		for (i = 1; i < npages; i++) { 
-			bool current_page_is_free = pages[i].pp_ref == 0; 
-			if (current_page_is_free == is_free) { 
-				continue; 
-			} else { 
-				cprintf("%d", start_index + 1); 
-				if (i - start_index > 1) { 
-					cprintf("..%d", i); 
-				} 
-				cprintf(" %s\n", is_free ? "FREE" : "ALLOCATED"); 
-				start_index = i; 
-				is_free = current_page_is_free; 
-			} 
-		} 
-		cprintf("%d", start_index + 1); 
-		if (i - start_index > 1) { 
-			cprintf("..%d", i); 
-		} 
-		cprintf(" %s\n", is_free ? "FREE" : "ALLOCATED"); 
-	} 
-	return 0; 
-}
 
 /***** Kernel monitor command interpreter *****/
 
