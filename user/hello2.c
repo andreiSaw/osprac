@@ -21,7 +21,7 @@ umain(int argc, char **argv)
 				cprintf("PTE_W ");
 				else if (uvpt[PGNUM(i)] & PTE_COW)
 					cprintf("PTE_COW ");
-			cprintf("%x --> %x\n ", i, uvpt[PGNUM(i)]& 0xFFFFF000);
+			cprintf("%x --> %x\n ", i, uvpt[PGNUM(i)]);
 		}
 	}
 }
