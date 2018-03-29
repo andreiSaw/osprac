@@ -17,7 +17,7 @@ void
 umain(int argc, char **argv)
 {
 	int r;
-	r = sys_page_alloc(0, (void*)0xDeadBeef, (PTE_U|PTE_P|PTE_W));
+	r = sys_page_alloc(sys_getenvid(), (void*)0xDeadBeef, (PTE_U|PTE_P|PTE_W));
 	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xDeadBeef);
 	int i;
@@ -25,7 +25,7 @@ umain(int argc, char **argv)
 		if ((uvpd[PDX(i)] & PTE_P) && // check if present
 			(uvpt[PGNUM(i)] & PTE_P) && // check if present
 			(uvpt[PGNUM(i)] & PTE_U)) {
-			cprintf("%i --> %i", PGNUM(i), uvpt[PGNUM(i)]& 0xFFFFF000);
+			cprintf("%d --> %d", PGNUM(i), uvpt[PGNUM(i)]& 0xFFFFF000);
 		}
 	}
 }
