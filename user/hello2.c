@@ -15,13 +15,15 @@ void handler(struct UTrapframe *utf)
 void
 umain(int argc, char **argv)
 {
-	set_pgfault_handler(handler);
+	r = sys_page_alloc(0, 0xDeadBeef, (PTE_U|PTE_P|PTE_W));
 	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xDeadBeef);
-	cprintf("%s\n", (char*)0xCafeBffe);
 	int i;
 	for (i = 0; i < USTACKTOP; i += PGSIZE) {
-			cprintf("%i%i",id, PGNUM(i));
+		if ((uvpd[PDX(i)] & PTE_P) && // check if present
+			(uvpt[PGNUM(i)] & PTE_P) && // check if present
+			(uvpt[PGNUM(i)] & PTE_U)) {
+			cprintf("%i,%i", uvpt[PGNUM(i)],PGNUM(i));
 		}
 	}
 }
