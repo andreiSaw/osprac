@@ -3,7 +3,6 @@
 
 void handler(struct UTrapframe *utf)
 {
-	int r;
 	void *addr = (void*)utf->utf_fault_va;
 
 	cprintf("fault %x\n", (uint32_t)addr);
@@ -15,6 +14,7 @@ void handler(struct UTrapframe *utf)
 void
 umain(int argc, char **argv)
 {
+	int r;
 	r = sys_page_alloc(0, (void*)0xDeadBeef, (PTE_U|PTE_P|PTE_W));
 	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xDeadBeef);
