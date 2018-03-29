@@ -5,8 +5,11 @@
 void
 umain(int argc, char **argv)
 {
-	int r;
-	r = sys_page_alloc(sys_getenvid(), (void*)0xdeadb000, (PTE_U|PTE_P|PTE_W));
+	sys_page_alloc(sys_getenvid(), (void*)0xdeadb000, (PTE_U|PTE_P|PTE_W));
+	sys_page_alloc(sys_getenvid(), (void*)0xa0000000, (PTE_U|PTE_P|PTE_W));
+	sys_page_alloc(sys_getenvid(), (void*)0xa1000000, (PTE_U|PTE_P|PTE_W));
+	sys_page_alloc(sys_getenvid(), (void*)0xa2000000, (PTE_U|PTE_P|PTE_W));
+
 	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xdeadb000);
 	int i;
@@ -18,7 +21,7 @@ umain(int argc, char **argv)
 				cprintf("PTE_W ");
 				else if (uvpt[PGNUM(i)] & PTE_COW)
 					cprintf("PTE_COW ");
-			cprintf("%d --> %d\n ", PGNUM(i), uvpt[PGNUM(i)]& 0xFFFFF000);
+			cprintf("%x --> %x\n ", i, uvpt[PGNUM(i)]& 0xFFFFF000);
 		}
 	}
 }
