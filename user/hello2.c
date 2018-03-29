@@ -1,5 +1,6 @@
 // hello, world
 #include <inc/lib.h>
+#define PTE_COW		0x800
 
 void
 umain(int argc, char **argv)
