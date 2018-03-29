@@ -9,7 +9,8 @@ umain(int argc, char **argv)
 	sys_page_alloc(sys_getenvid(), (void*)0xa0000000, (PTE_U|PTE_P|PTE_W));
 	sys_page_alloc(sys_getenvid(), (void*)0xa1000000, (PTE_U|PTE_P|PTE_W));
 	sys_page_alloc(sys_getenvid(), (void*)0xa2000000, (PTE_U|PTE_P|PTE_W));
-
+	*(int *)0xdeadbeaf = 1;
+	
 	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xdeadb000);
 	int i;
