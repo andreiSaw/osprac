@@ -1,15 +1,21 @@
 // hello, world
 #include <inc/lib.h>
-#define VA	((char *) 0xA0000000)
+
+handler(struct UTrapframe *utf)
+{
+	int r;
+	void *addr = (void*)utf->utf_fault_va;
+
+	cprintf("fault %x\n", (uint32_t)addr);
+	if ((r = sys_page_alloc(0, ROUNDDOWN(addr, PGSIZE), (PTE_U|PTE_P|PTE_W))) < 0)
+		panic("allocating at %x in page fault handler: %i", (uint32_t)addr, r);
+	snprintf((char*) addr, 100, "this string was faulted in at %x", (uint32_t)addr);
+}
 
 void
 umain(int argc, char **argv)
 {
-	int r;
-	envid_t envid1 = thisenv->env_id;
-	cprintf("hello, lazy page\n");
-	cprintf("i am environment %08x\n", envid1);
-	if ((r = sys_page_alloc(0, VA, (PTE_U|PTE_P|PTE_W))) < 0)
-		panic("sys_page_alloc: %i\n", r);
-	cprintf("page allocated\n");
+	set_pgfault_handler(handler);
+	cprintf("%s\n", (char*)0xDeadBeef);
+	cprintf("%s\n", (char*)0xCafeBffe);
 }
