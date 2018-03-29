@@ -2,7 +2,6 @@
 
 #include <inc/syscall.h>
 #include <inc/lib.h>
-#include <lib/fork.c>
 
 static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -71,7 +70,6 @@ sys_yield(void)
 int
 sys_page_alloc(envid_t envid, void *va, int perm)
 {
-	set_pgfault_handler(pgfault);
 	return syscall(SYS_page_alloc, 1, envid, (uint32_t) va, perm, 0, 0);
 }
 
