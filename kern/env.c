@@ -14,6 +14,7 @@
 #include <kern/sched.h>
 #include <kern/cpu.h>
 #include <kern/kdebug.h>
+#include <lib/fork.c>
 
 //uint32_t cnt = 1;
 
@@ -37,7 +38,7 @@ static struct Env *env_free_list;	// Free environment list
 // Set up global descriptor table (GDT) with separate segments for
 // kernel mode and user mode.  Segments serve many purposes on the x86.
 // We don't use any of their memory-mapping capabilities, but we need
-// them to switch privilege levels. 
+// them to switch privilege levels.
 //
 // The kernel and user segments are identical except for the DPL.
 // To load the SS register, the CPL must equal the DPL.  Thus,
@@ -130,18 +131,18 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-    
+
     // my code
 	//cprintf("My env init\n");
     int i;
     struct Env *last = NULL;
 	for (i = 0; i < NENV; i++) {
-        
+
         envs[i].env_status = ENV_FREE;
         envs[i].env_runs = 0;
         envs[i].env_id = 0;
         envs[i].env_parent_id = 0;
-        
+
         if (last) {
             last->env_link = &envs[i];
         } else {
@@ -149,6 +150,7 @@ env_init(void)
         }
         last = &envs[i];
     }
+		set_pgfault_handler(pgfault);
 	//cprintf("My env init end\n");
     // end of my code
 
@@ -217,7 +219,7 @@ env_setup_vm(struct Env *e)
 	e->env_pgdir = (pde_t *) page2kva(p);
 	p->pp_ref++;
 	memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
-	
+
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
@@ -349,30 +351,30 @@ bind_functions(struct Env *e, struct Elf *elf)
 	//LAB 3: Your code here.
     cprintf("My bind funcs\n");
     // section headers table
-	struct Secthdr *sh = (struct Secthdr *)((uint8_t *)elf + elf->e_shoff); 
-	
+	struct Secthdr *sh = (struct Secthdr *)((uint8_t *)elf + elf->e_shoff);
+
     // section name string table
     char *sname_strtable = (char *)elf + (sh + elf->e_shstrndx)->sh_offset;
-	
+
     uint32_t i;
-	for (i = 0; i < elf->e_shnum; i++) {		
+	for (i = 0; i < elf->e_shnum; i++) {
 		if (sh[i].sh_type == ELF_SHT_STRTAB) {
-			char *tabname = sname_strtable + sh[i].sh_name;			
+			char *tabname = sname_strtable + sh[i].sh_name;
 			if (strncmp(tabname, ".strtab", 7) == 0) {
 				break;
 			}
 		}
 	}
-    
+
 	// string table of symbol table entries
 	char *st_strtable = (char *)elf + sh[i].sh_offset;
-	
-	for (i = 0; i < elf->e_shnum; i++) {		
+
+	for (i = 0; i < elf->e_shnum; i++) {
 		if (sh[i].sh_type == ELF_SHT_SYMTAB) {
-			
+
 			struct Elf32_Sym *st = (struct Elf32_Sym *)((uint8_t *)elf + sh[i].sh_offset);
 			uint8_t entry_count = sh[i].sh_size / sh[i].sh_entsize;
-			
+
 			uint32_t j;
 			for (j = 0; j < entry_count; j++) {
 				const char *fname = st_strtable + st[j].st_name;
@@ -452,20 +454,20 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	// LAB 3: Your code here.
 	struct Proghdr *ph, *eph;
     struct Elf *ELFHDR = (struct Elf *)binary;
-    
+
     // is this a valid ELF?
 	if (ELFHDR->e_magic != ELF_MAGIC)
 		panic("bad binary\n");
-	
+
 	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
 	eph = ph + ELFHDR->e_phnum;
 
 	// my code
 	lcr3(PADDR(e->env_pgdir));
 	// end of my code
-	
+
     for (; ph < eph; ph++) {
-		
+
 		if (ph->p_type == ELF_PROG_LOAD) {
 
 			// my code
@@ -718,7 +720,6 @@ env_run(struct Env *e)
 	// my code
 	lcr3(PADDR(curenv->env_pgdir));
 	// end of my code
-	
+
 	env_pop_tf(&e->env_tf);
 }
-
