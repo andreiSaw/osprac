@@ -13,7 +13,11 @@ umain(int argc, char **argv)
 		if ((uvpd[PDX(i)] & PTE_P) && // check if present
 			(uvpt[PGNUM(i)] & PTE_P) && // check if present
 			(uvpt[PGNUM(i)] & PTE_U)) {
-			cprintf("%d --> %d\n", PGNUM(i), uvpt[PGNUM(i)]& 0xFFFFF000);
+			if (uvpt[PGNUM(i)] & PTE_W)
+				cprintf("PTE_W ");
+				else if (uvpt[PGNUM(i)] & PTE_COW)
+					cprintf("PTE_COW ");
+			cprintf("%d --> %d\n ", PGNUM(i), uvpt[PGNUM(i)]& 0xFFFFF000);
 		}
 	}
 }
