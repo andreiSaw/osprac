@@ -3,7 +3,7 @@
 #define VA	((char *) 0xA0000000)
 
 void
-umain(int argc, char **argv)
+umain2(int argc, char **argv)
 {
 	int r;
 	envid_t envid1 = thisenv->env_id;
