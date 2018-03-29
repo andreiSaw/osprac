@@ -1,7 +1,7 @@
 // hello, world
 #include <inc/lib.h>
 
-handler(struct UTrapframe *utf)
+void handler(struct UTrapframe *utf)
 {
 	int r;
 	void *addr = (void*)utf->utf_fault_va;
