@@ -16,7 +16,7 @@ void
 umain(int argc, char **argv)
 {
 	set_pgfault_handler(handler);
-	cprintf("pages allocate\n\n")
+	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xDeadBeef);
 	cprintf("%s\n", (char*)0xCafeBffe);
 }
