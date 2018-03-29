@@ -3,6 +3,8 @@
 
 void handler(struct UTrapframe *utf)
 {
+	int r;
+	
 	void *addr = (void*)utf->utf_fault_va;
 
 	cprintf("fault %x\n", (uint32_t)addr);
