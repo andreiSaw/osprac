@@ -4,7 +4,7 @@
 void handler(struct UTrapframe *utf)
 {
 	int r;
-	
+
 	void *addr = (void*)utf->utf_fault_va;
 
 	cprintf("fault %x\n", (uint32_t)addr);
@@ -25,7 +25,7 @@ umain(int argc, char **argv)
 		if ((uvpd[PDX(i)] & PTE_P) && // check if present
 			(uvpt[PGNUM(i)] & PTE_P) && // check if present
 			(uvpt[PGNUM(i)] & PTE_U)) {
-			cprintf("%i,%i", uvpt[PGNUM(i)],PGNUM(i));
+			cprintf("%i --> %i", PGNUM(i), uvpt[PGNUM(i)]& 0xFFFFF000);
 		}
 	}
 }
