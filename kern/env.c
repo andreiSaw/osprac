@@ -14,7 +14,6 @@
 #include <kern/sched.h>
 #include <kern/cpu.h>
 #include <kern/kdebug.h>
-#include <lib/fork.c>
 
 //uint32_t cnt = 1;
 
