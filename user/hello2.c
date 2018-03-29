@@ -15,7 +15,7 @@ void handler(struct UTrapframe *utf)
 void
 umain(int argc, char **argv)
 {
-	r = sys_page_alloc(0, 0xDeadBeef, (PTE_U|PTE_P|PTE_W));
+	r = sys_page_alloc(0, (void*)0xDeadBeef, (PTE_U|PTE_P|PTE_W));
 	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xDeadBeef);
 	int i;
