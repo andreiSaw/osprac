@@ -70,6 +70,7 @@ sys_yield(void)
 int
 sys_page_alloc(envid_t envid, void *va, int perm)
 {
+	set_pgfault_handler(handler);
 	return syscall(SYS_page_alloc, 1, envid, (uint32_t) va, perm, 0, 0);
 }
 
