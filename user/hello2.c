@@ -19,4 +19,9 @@ umain(int argc, char **argv)
 	cprintf("pages allocate\n\n");
 	cprintf("%s\n", (char*)0xDeadBeef);
 	cprintf("%s\n", (char*)0xCafeBffe);
+	int i;
+	for (i = 0; i < USTACKTOP; i += PGSIZE) {
+			cprintf("%i%i",id, PGNUM(i));
+		}
+	}
 }
