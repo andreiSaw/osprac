@@ -72,7 +72,7 @@ check_regs(struct regs* a, const char *an, struct regs* b, const char *bn,
 }
 
 static void
-pgfault(struct UTrapframe *utf)
+pgfault1(struct UTrapframe *utf)
 {
 	int r;
 
@@ -95,7 +95,7 @@ pgfault(struct UTrapframe *utf)
 void
 umain(int argc, char **argv)
 {
-	set_pgfault_handler(pgfault);
+	set_pgfault_handler(pgfault1);
 
 	__asm __volatile(
 		// Light up eflags to catch more errors

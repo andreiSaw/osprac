@@ -24,7 +24,7 @@ i386_init(void)
 	// Clear the uninitialized global data (BSS) section of our program.
 	// This ensures that all static/global variables start out zero.
 	memset(edata, 0, end - edata);
-	
+
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
 	cons_init();
@@ -51,12 +51,12 @@ i386_init(void)
 	irq_setmask_8259A(irq_mask_8259A & ~ (1 << IRQ_CLOCK));
 	//irq_setmask_8259A(IRQ_CLOCK);
 	// end of my code
-	
+
 	// my code
 	//uint8_t status = rtc_check_status();
 	//pic_send_eoi(status);
 	// end of code
-	
+
 #ifdef CONFIG_KSPACE
 	// Touch all you want.
 	ENV_CREATE_KERNEL_TYPE(prog_test1);
@@ -76,7 +76,7 @@ i386_init(void)
 	ENV_CREATE(user_spawnhello, ENV_TYPE_USER);
 #endif // TEST*
 #endif
-	
+
 	// my code
 	//uint8_t status = rtc_check_status();
 	//pic_send_eoi(status);
@@ -136,4 +136,3 @@ _warn(const char *file, int line, const char *fmt,...)
 	cprintf("\n");
 	va_end(ap);
 }
-

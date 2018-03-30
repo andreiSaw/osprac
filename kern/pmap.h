@@ -9,6 +9,8 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 struct Env;
+//itask
+struct PageInfo *test_page;
 
 extern char bootstacktop[], bootstack[];
 
@@ -16,6 +18,7 @@ extern struct PageInfo *pages;
 extern size_t npages;
 
 extern pde_t *kern_pgdir;
+
 
 
 /* This macro takes a kernel virtual address -- an address that points above
