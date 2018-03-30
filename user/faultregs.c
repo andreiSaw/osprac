@@ -71,7 +71,7 @@ check_regs(struct regs* a, const char *an, struct regs* b, const char *bn,
 		cprintf("MISMATCH\n");
 }
 
-void
+static void
 pgfault(struct UTrapframe *utf)
 {
 	int r;
