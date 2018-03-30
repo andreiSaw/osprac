@@ -5,6 +5,8 @@
 void
 umain(int argc, char **argv)
 {
+	set_pgfault_handler(pgfault);
+
 	sys_page_alloc(sys_getenvid(), (void*)0xdeadb000, (PTE_U|PTE_P|PTE_W));
 	sys_page_alloc(sys_getenvid(), (void*)0xa0000000, (PTE_U|PTE_P|PTE_W));
 	sys_page_alloc(sys_getenvid(), (void*)0xa1000000, (PTE_U|PTE_P|PTE_W));

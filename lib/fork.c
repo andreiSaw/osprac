@@ -14,6 +14,7 @@
 void
 pgfault(struct UTrapframe *utf)
 {
+	cprintf("iam pgfault");
 	void *addr = (void *) utf->utf_fault_va;addr=addr;
 	uint32_t err = utf->utf_err;err=err;
 
@@ -46,7 +47,6 @@ pgfault(struct UTrapframe *utf)
 	memcpy(PFTEMP, addr, PGSIZE);
 	sys_page_map(0, PFTEMP,	0, addr, (uvpt[PGNUM(addr)] & PTE_SYSCALL & ~PTE_COW) | PTE_W);
 	sys_page_unmap(0, PFTEMP);
-	//panic("pgfault not implemented");
 }
 
 //
@@ -121,7 +121,7 @@ fork(void)
 			duppage(id, PGNUM(i));
 		}
 	}
-	sys_page_alloc(id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_W | PTE_P);
+	sys_page_alloc(id, (void *)(UXSTACKTOP - PGSIZE), PTE_U | PTE_P);
 
 	// mark the child as runnable
 	sys_env_set_status(id, ENV_RUNNABLE);
