@@ -14,7 +14,7 @@ fs_test(void)
 	uint32_t *bits;
 
 	// back up bitmap
-	if ((r = sys_page_alloc(0, (void*) PGSIZE, PTE_P|PTE_U|PTE_W)) < 0)
+	if ((r = sys_page_alloc(0, (void*) PGSIZE, PTE_P|PTE_U)) < 0)
 		panic("sys_page_alloc: %i", r);
 	bits = (uint32_t*) PGSIZE;
 	memmove(bits, bitmap, PGSIZE);
