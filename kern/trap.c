@@ -302,11 +302,7 @@ trap(struct Trapframe *tf)
 	// Garbage collect if current enviroment is a zombie
 	if (curenv->env_status == ENV_DYING) {
 		env_free(curenv);
-		curenv = NULL;
-		// my code		
-		//uint8_t status = rtc_check_status();
-		//pic_send_eoi(status);
-		// end of my code		
+		curenv = NULL;	
 		sched_yield();
 	}
 
@@ -320,11 +316,6 @@ trap(struct Trapframe *tf)
 	// Record that tf is the last real trapframe so
 	// print_trapframe can print some additional information.
 	last_tf = tf;
-	
-	// my code
-	//uint8_t status = rtc_check_status();
-	//pic_send_eoi(status);
-	// end of my code
 
 	// Dispatch based on what type of trap occurred
 	trap_dispatch(tf);
@@ -343,7 +334,7 @@ trap(struct Trapframe *tf)
 void
 page_fault_handler(struct Trapframe *tf)
 {
-	//print_trapframe(tf);
+	print_trapframe(tf);
 	uint32_t fault_va;
 
 	// Read processor's CR2 register to find the faulting address

@@ -36,5 +36,6 @@ set_pgfault_handler(void (*handler)(struct UTrapframe *utf))
 	_pgfault_handler = handler;
 
 	sys_env_set_pgfault_upcall(0, _pgfault_upcall);
+	cprintf("_pgfault_handler %x\n",(int) _pgfault_handler);
 
 }
