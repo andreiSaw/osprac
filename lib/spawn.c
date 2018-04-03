@@ -212,7 +212,7 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 		return -E_NO_MEM;
 
 	// Allocate the single stack page at UTEMP.
-	if ((r = sys_page_alloc(0, (void*) UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
+	if ((r = sys_page_alloc(0, (void*) UTEMP, PTE_P|PTE_U)) < 0)
 		return r;
 
 
@@ -313,4 +313,3 @@ copy_shared_pages(envid_t child)
     }
     return 0;
 }
-
