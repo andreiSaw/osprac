@@ -13,6 +13,8 @@
 #include <kern/sched.h>
 #include <kern/kclock.h>
 
+#define PTE_COW  0x800
+
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
 // Destroys the environment on memory errors.
@@ -221,7 +223,16 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		// or the caller doesn't have permission to change it
 		return -E_BAD_ENV;
 	}
-	struct PageInfo *page = page_alloc(ALLOC_ZERO);
+	struct PageInfo *page;
+	if (perm & PTE_W) {
+		page = zero_page;
+		perm = perm & ~PTE_W;
+		perm = perm | PTE_COW;
+	}
+	else {
+		page = page_alloc(ALLOC_ZERO);
+	}
+
 	if (!page) {
 		return -E_NO_MEM;
 	}
@@ -230,10 +241,10 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	if (result) {
 		// page insert failed
 		// free the allocated page
+		cprintf("page insert failed %i\n",result);
 		page_free(page);
 	}
 	return result;
-	//panic("sys_page_alloc not implemented");
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space
@@ -273,12 +284,12 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	}
 	if (!PGOFF(srcva) && (uintptr_t) srcva < UTOP &&
 		!PGOFF(dstva) && (uintptr_t) dstva < UTOP) {
-		
+
 		pte_t *pte;
-		struct PageInfo *page = page_lookup(src_env->env_pgdir, srcva, &pte);	
+		struct PageInfo *page = page_lookup(src_env->env_pgdir, srcva, &pte);
 		if (page &&  // page_lookup successful
 			((perm & (PTE_U | PTE_P)) == (PTE_U | PTE_P)) && // appropriate perm
-			!(perm & (~(PTE_SYSCALL))) && 
+			!(perm & (~(PTE_SYSCALL))) &&
 			(((perm & PTE_W) & (*pte)) == (perm & PTE_W))) {
 
 			return page_insert(dst_env->env_pgdir, page, dstva, perm); // returns -E_NO_MEM if there's no memory
@@ -425,7 +436,7 @@ sys_ipc_recv(void *dstva)
 	} else {
 		curenv->env_ipc_dstva = (void *) UTOP;
 	}
-	curenv->env_ipc_recving = 1;	
+	curenv->env_ipc_recving = 1;
 	curenv->env_status = ENV_NOT_RUNNABLE;
 	curenv->env_tf.tf_regs.reg_eax = 0;
 	sched_yield();
@@ -448,7 +459,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Call the function corresponding to the 'syscallno' parameter.
 	// Return any appropriate return value.
 	// LAB 8: Your code here.
-	
+
 	// my code
 	if (syscallno == SYS_cputs) {
 		sys_cputs((char *) a1, a2);
@@ -487,7 +498,6 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return -E_INVAL;
 	}
 	// end of my code
-	
+
 	//panic("syscall not implemented");
 }
-
