@@ -241,7 +241,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	if (result) {
 		// page insert failed
 		// free the allocated page
-		cprintf("page insert failed %i",result);
+		cprintf("page insert failed %i\n",result);
 		page_free(page);
 	}
 	return result;
