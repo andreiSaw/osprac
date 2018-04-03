@@ -281,7 +281,7 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 				return r;
 		} else {
 			// from file
-			if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
+			if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U)) < 0)
 				return r;
 			if ((r = seek(fd, fileoffset + i)) < 0)
 				return r;
