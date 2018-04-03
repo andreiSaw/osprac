@@ -13,6 +13,8 @@
 #include <kern/sched.h>
 #include <kern/kclock.h>
 
+#define COW  0x800
+
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
 // Destroys the environment on memory errors.
@@ -221,7 +223,16 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 		// or the caller doesn't have permission to change it
 		return -E_BAD_ENV;
 	}
-	struct PageInfo *page = page_alloc(ALLOC_ZERO);
+	struct PageInfo *page;
+	if (perm & PTE_W) {
+		page = zero_page;
+		perm = perm & ~W;
+		perm = perm | COW;
+	}
+	else {
+		page = page_alloc(ALLOC_ZERO);
+	}
+
 	if (!page) {
 		return -E_NO_MEM;
 	}
