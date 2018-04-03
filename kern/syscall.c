@@ -13,7 +13,7 @@
 #include <kern/sched.h>
 #include <kern/kclock.h>
 
-#define COW  0x800
+#define PTE_COW  0x800
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -226,8 +226,8 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	struct PageInfo *page;
 	if (perm & PTE_W) {
 		page = zero_page;
-		perm = perm & ~W;
-		perm = perm | COW;
+		perm = perm & ~PTE_W;
+		perm = perm | PTE_COW;
 	}
 	else {
 		page = page_alloc(ALLOC_ZERO);
