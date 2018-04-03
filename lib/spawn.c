@@ -132,9 +132,14 @@ spawn(const char *prog, const char **argv)
 	if ((r = sys_env_set_trapframe(child, &child_tf)) < 0)
 		panic("sys_env_set_trapframe: %i", r);
 
+	sys_page_alloc(child,(void*)(UXSTACKTOP-PGSIZE),PTE_U|PTE_P);
+	extern void _pgfault_upcall();
+	sys_env_set_pgfault_upcall(child,_pgfault_upcall);
+	cprintf("%x\n",(int)_pgfault_upcall);
+
 	if ((r = sys_env_set_status(child, ENV_RUNNABLE)) < 0)
 		panic("sys_env_set_status: %i", r);
-
+	
 	return child;
 
 error:
@@ -153,6 +158,7 @@ spawnl(const char *prog, const char *arg0, ...)
 	// The contract of the function guarantees that the last
 	// argument will always be NULL, and that none of the other
 	// arguments will be NULL.
+	set_pgfault_handler(pgfault);
 	int argc=0;
 	va_list vl;
 	va_start(vl, arg0);
@@ -212,7 +218,7 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 		return -E_NO_MEM;
 
 	// Allocate the single stack page at UTEMP.
-	if ((r = sys_page_alloc(0, (void*) UTEMP, PTE_P|PTE_U)) < 0)
+	if ((r = sys_page_alloc(0, (void*) UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
 		return r;
 
 
@@ -281,7 +287,7 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 				return r;
 		} else {
 			// from file
-			if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U)) < 0)
+			if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
 				return r;
 			if ((r = seek(fd, fileoffset + i)) < 0)
 				return r;
