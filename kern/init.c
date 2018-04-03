@@ -52,11 +52,6 @@ i386_init(void)
 	//irq_setmask_8259A(IRQ_CLOCK);
 	// end of my code
 
-	// my code
-	//uint8_t status = rtc_check_status();
-	//pic_send_eoi(status);
-	// end of code
-
 #ifdef CONFIG_KSPACE
 	// Touch all you want.
 	ENV_CREATE_KERNEL_TYPE(prog_test1);
@@ -76,11 +71,6 @@ i386_init(void)
 	ENV_CREATE(user_spawnhello, ENV_TYPE_USER);
 #endif // TEST*
 #endif
-
-	// my code
-	//uint8_t status = rtc_check_status();
-	//pic_send_eoi(status);
-	// end of code
 
 	// Should not be necessary - drains keyboard because interrupt has given up.
 	kbd_intr();

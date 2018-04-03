@@ -334,7 +334,7 @@ trap(struct Trapframe *tf)
 void
 page_fault_handler(struct Trapframe *tf)
 {
-	//print_trapframe(tf);
+	print_trapframe(tf);
 	uint32_t fault_va;
 
 	// Read processor's CR2 register to find the faulting address
